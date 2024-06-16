@@ -9,24 +9,37 @@ service_acc = gspread.service_account(key)
 attribute_sheet_id = "12cyM8-Azt8JhrytdE99p202bROfpb21QvONthrwHFVI"
 attribute_sheet = service_acc.open_by_key(attribute_sheet_id)
 products_sheet = attribute_sheet.worksheet("Product Combinations")
+attribute_codes_sheet = attribute_sheet.worksheet("Attributes")
 products_data = products_sheet.get()
+attribute_data = attribute_codes_sheet.get()
 
 # Creating DataFrame
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
 products = pd.DataFrame(products_data[1:],columns=products_data[0])
 product_codes = list(set(list(products["productCode"])))
+attributes = pd.DataFrame(attribute_data[1:],columns=attribute_data[0])
 
 cols = ["Category", "Product", "Sheets", "Paper", "Colour", "Format",
         "Finishing", "Extra", "Binding", "Refinement", "Quantity", "Markup"]
+cols1 = ["Sheets", "Paper", "Colour", "Format",
+        "Finishing", "Extra", "Binding", "Refinement"]
 
 for code in product_codes:
     data = products[products["productCode"]==code]
-    data = data.drop_duplicates()
+    data = data.drop_duplicates().reset_index(drop=True)
     data = data.pivot(index="productCode",columns="Type")
     data.columns = data.columns.droplevel()
     data["Product"] = code
+    data = data.reset_index(drop=True)
     for col in data.columns:
         data[col] = data[col].str.split(";")
         data = data.explode(col)
-        data[cols].to_csv(f"{code}_combinations.csv",index=False)
+        data = data.reset_index(drop=True)
+        if col in cols1:
+            attributes_data = attributes[attributes["Type"] == col].drop_duplicates().reset_index(drop=True)
+            merged = pd.merge(data, attributes_data, "left",
+                                 right_on="attribute_name", left_on=col).reset_index(drop=True)
+            col_codes = merged["code"]
+            data[col] = col_codes
+    data[cols].to_csv(f"{code}_combinations.csv", index=False)

@@ -76,7 +76,7 @@ def get_SQM(format: str)-> float:
 
 # Creating DataFrame
 
-data = pd.read_csv(file_test, keep_default_na=True)
+data = pd.read_csv(file_test, keep_default_na=False)
 categories = list(set(list(data["Category"])))
 
 # Adding basic calculations
@@ -101,4 +101,4 @@ for size in categories_sizes["Litho"]:
     # TODO: Calculate the plates / overs
 
 
-# litho_data.to_csv("test_litho.csv",index=False)
+litho_data.to_csv("test_litho.csv",index=False)
