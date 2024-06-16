@@ -1,3 +1,6 @@
 *key*json
 *xlsxsx
 *.xlsx
+*.csv
+.fuse*
+.~*

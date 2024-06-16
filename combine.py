@@ -21,13 +21,11 @@ cols = ["Category","Product","Paper","Colour","Format","Finishing","Extra","Bind
 
 for code in product_codes:
     data = products[products["productCode"]==code]
+    data = data.drop_duplicates()
     data = data.pivot(index="productCode",columns="Type")
     data.columns = data.columns.droplevel()
     data["Product"] = code
     for col in data.columns:
         data[col] = data[col].str.split(";")
         data = data.explode(col)
-        data[cols].to_excel(f"{code}_combinations.xlsx",index=False)
-
-    print(data)
-    print(data.columns)
+        data[cols].to_csv(f"{code}_combinations.csv",index=False)
