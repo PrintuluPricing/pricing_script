@@ -21,8 +21,8 @@ file_test = files[0]
 
 # NOTE: Variables
 categories_sizes = {
-    "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '45.5 x 64', '71 x 102'],
-    "SF Digital": ['32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
+    "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
+    "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
     "LF Digital": ["100x100"],
 }
 
@@ -31,6 +31,21 @@ categories_space = {
     "SF Digital": {"width": 1, "height": 1},
     "LF Digital": {"width": 5, "height": 5},
 }
+
+
+machine_sizes = {
+    '45.5 x 64': "A2",
+    '51 x 71': "A2",
+    '64 x 91.5': "A1",
+    '71 x 102': "A1",
+    '32 x 45.5': "A3",
+    '32 x 50': "A3",
+    '32 x 64': "A3",
+    '32 x 71': "A3",
+    '32 x 91.5': "A3",
+        }
+
+
 BLEED = 3
 
 placements = {}
@@ -64,6 +79,7 @@ def get_placements(format, size):
 
 
 def get_dimensions(size: str)-> (float, float):
+    size = size.replace("_",".")
     height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)",size)[0]
     height = float(height)
     width = float(width)
@@ -82,6 +98,7 @@ categories = list(set(list(data["Category"])))
 # Adding basic calculations
 # Calculating pages number, SQM
 data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
+data["height_width"] = data["Format"].apply(get_dimensions)
 data["SQM"] = data["Format"].apply(get_SQM)
 
 
@@ -90,15 +107,30 @@ litho_data = data[data["Category"] == "Litho"]
 sf_digital_data = data[data["Category"] == "SF Digital"]
 lf_digital_data = data[data["Category"] == "LF Digital"]
 
+litho_data["Sheet_size"] = ";".join(categories_sizes["Litho"])
+litho_data["Sheet_size"] = litho_data["Sheet_size"].str.split(";")
+litho_data = litho_data.explode("Sheet_size")
+litho_data["Machine_size"] = litho_data["Sheet_size"].map(machine_sizes)
+
 # Litho Calculations
-litho_data["Workstyle"] = litho_data["Colour"]
-print(litho_data["Workstyle"])
+# NOTE: Check whether to select sheetwise vs other workstyle and which to take by default
+litho_data["Workstyle"] = np.where(litho_data["Colour_code"].str[-1] == "0","Simplex","Sheetwise")
+litho_data["Front_colour"] = litho_data["Colour_code"].str.extract(r"colour_(\d)\d").astype(int)
+litho_data["Back_colour"] = litho_data["Colour_code"].str[-1].astype(int)
 
-for size in categories_sizes["Litho"]:
-    litho_data[f"Placements_{size}"] = litho_data["Format"].apply(lambda x: get_placements(x, size))
-    litho_data[f"printing_sheets_{size}"] = np.ceil(litho_data["Quantity"] * litho_data["PagesNumber"] / litho_data[f"Placements_{size}"]).astype(int)
+# Calculating Placements
+litho_data["Placements"] = litho_data.apply(lambda x: get_placements(x["Format"], x["Sheet_size"]),axis=1)
+litho_data["printing_sheets"] = np.ceil(litho_data["Quantity"] * litho_data["PagesNumber"] / litho_data[f"Placements"]).astype(int)
 
-    # TODO: Calculate the plates / overs
+# TODO: Calculate the plates / overs
+litho_data["Plates"] = np.where(litho_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_data["Front_colour"] +
+                                litho_data["Back_colour"], (litho_data["Front_colour"]+litho_data["Back_colour"])/2)
+litho_data["Overs"] = litho_data["Plates"] * 50
 
+
+
+
+
+print(litho_data)
 
 litho_data.to_csv("test_litho.csv",index=False)

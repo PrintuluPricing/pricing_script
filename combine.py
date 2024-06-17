@@ -41,5 +41,6 @@ for code in product_codes:
             merged = pd.merge(data, attributes_data, "left",
                                  right_on="attribute_name", left_on=col).reset_index(drop=True)
             col_codes = merged["code"]
-            data[col] = col_codes
+            data[f"{col}_code"] = col_codes
+            cols.append(f"{col}_code")
     data[cols].to_csv(f"{code}_combinations.csv", index=False)
