@@ -9,6 +9,55 @@ import warnings
 
 warnings.simplefilter(action="ignore")
 
+# Helper Functions
+# PERF: need to update the function for caching
+def get_placements1(format, category):
+    x, y = get_dimensions(format)
+    x = float(x) + BLEED
+    y = float(y) + BLEED
+    sizes = categories_sizes[category]
+    for size in sizes:
+        height, width = get_dimensions(size)
+        placements1 = int(height/x * width / y)
+        placements2 = int(height/y * width / x)
+        placement = max(placements1, placements2)
+        print(size, placement)
+        placements[format] = {size: placement}
+
+
+def get_placements(format, size):
+    x, y = get_dimensions(format)
+    x = float(x) + BLEED
+    y = float(y) + BLEED
+    height, width = get_dimensions(size)
+    placements1 = int(height/x * width / y)
+    placements2 = int(height/y * width / x)
+    placement = max(placements1, placements2)
+    placements[format] = {size: placement}
+    return placement
+
+
+def get_dimensions(size: str) -> (float, float):
+    size = size.replace("_", ".")
+    height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)",size)[0]
+    height = float(height)
+    width = float(width)
+    return height, width
+
+
+def get_SQM(format: str) -> float:
+    height, width = get_dimensions(format)
+    return height * width / 10_000
+
+
+def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
+    wb = service_acc.open(wb_name, folder)
+    ws = wb.worksheet(sheet_name)
+    values = ws.get_all_values()
+    data = pd.DataFrame(values[1:], columns=values[0])
+    return data
+
+
 
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
@@ -19,6 +68,8 @@ args = sys.argv
 files = glob.glob("./*tp*combinations.csv")
 file_test = files[0]
 
+key = "sheets_key_new.json"
+service_acc = gspread.service_account(key)
 # NOTE: Variables
 categories_sizes = {
     "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
@@ -47,48 +98,9 @@ machine_sizes = {
 
 
 BLEED = 3
+INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
 placements = {}
-
-# Helper Functions
-# FIX: need to update the function for caching
-def get_placements1(format, category):
-    x, y = get_dimensions(format)
-    x = float(x) + BLEED
-    y = float(y) + BLEED
-    sizes = categories_sizes[category]
-    for size in sizes:
-        height, width = get_dimensions(size)
-        placements1 = int(height/x * width / y)
-        placements2 = int(height/y * width / x)
-        placement = max(placements1,placements2)
-        print(size, placement)
-        placements[format] = {size:placement}
-
-
-def get_placements(format, size):
-    x, y = get_dimensions(format)
-    x = float(x) + BLEED
-    y = float(y) + BLEED
-    height, width = get_dimensions(size)
-    placements1 = int(height/x * width / y)
-    placements2 = int(height/y * width / x)
-    placement = max(placements1,placements2)
-    placements[format] = {size: placement}
-    return placement
-
-
-def get_dimensions(size: str)-> (float, float):
-    size = size.replace("_",".")
-    height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)",size)[0]
-    height = float(height)
-    width = float(width)
-    return height, width
-
-def get_SQM(format: str)-> float:
-    height, width = get_dimensions(format)
-    return height * width / 10_000
-
 
 # Creating DataFrame
 
@@ -123,14 +135,33 @@ litho_data["Placements"] = litho_data.apply(lambda x: get_placements(x["Format"]
 litho_data["printing_sheets"] = np.ceil(litho_data["Quantity"] * litho_data["PagesNumber"] / litho_data[f"Placements"]).astype(int)
 
 # TODO: Calculate the plates / overs
-litho_data["Plates"] = np.where(litho_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_data["Front_colour"] +
-                                litho_data["Back_colour"], (litho_data["Front_colour"]+litho_data["Back_colour"])/2)
+
+litho_data["Plates"] = np.where(litho_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_data["Front_colour"] + litho_data["Back_colour"], (litho_data["Front_colour"]+litho_data["Back_colour"])/2)
 litho_data["Overs"] = litho_data["Plates"] * 50
+# Machine Prices
+
+litho_machines = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Machine Costs")
+# litho_machines = format_prices(litho_machines)
+litho_machines = pd.melt(litho_machines, ["Attribute", "Category"],var_name="Supplier")
+litho_machines = litho_machines[litho_machines["value"] != ""]
+litho_machines["value"] = litho_machines["value"].astype(float)
+litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
+litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
+litho_data = pd.merge(litho_data,litho_machines,"left",on="Machine_size")
+litho_data = litho_data[litho_data["Plates Costs"].isna() == False]
+litho_data["Setup Cost"] = litho_data["Setup Time"] * litho_data["Plates"] / 60 * litho_data["Cost"] + litho_data["printing_sheets"] / litho_data["Sheets / Hour"] * litho_data["Cost"]
+litho_data["Plates Cost"] = litho_data["Plates"] * litho_data["Plates Costs"]
+litho_data["Litho Costs"] = litho_data["Setup Cost"] + litho_data["Plates Cost"]
 
 
+# Paper Costs NOTE: Applies to SF Digital as well
 
-
+paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
+paper_prices["Height"] = paper_prices["Size"].apply(get_dimensions)[0]
+print(paper_prices)
+ 
+# TODO: Calculate the size for paper lookup and check for 280 GSM Price
+exit()
 
 print(litho_data)
-
 litho_data.to_csv("test_litho.csv",index=False)
