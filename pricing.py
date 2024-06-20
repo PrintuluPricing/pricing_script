@@ -58,6 +58,10 @@ def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
     return data
 
 
+def get_nth_value(x: str, delim: str, n: int)-> str:
+    return x.split(delim)[n]
+
+
 
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
@@ -115,29 +119,48 @@ data["SQM"] = data["Format"].apply(get_SQM)
 
 
 # Splitting by category
-litho_data = data[data["Category"] == "Litho"]
-sf_digital_data = data[data["Category"] == "SF Digital"]
+litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"]== "SF Digital")]
 lf_digital_data = data[data["Category"] == "LF Digital"]
 
-litho_data["Sheet_size"] = ";".join(categories_sizes["Litho"])
-litho_data["Sheet_size"] = litho_data["Sheet_size"].str.split(";")
-litho_data = litho_data.explode("Sheet_size")
-litho_data["Machine_size"] = litho_data["Sheet_size"].map(machine_sizes)
+
+# Common Calculations for Litho and SF Digital
+
+
+
+litho_sf_digital_data["Sheet_size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
+litho_sf_digital_data["Sheet_size"] = litho_sf_digital_data["Sheet_size"].str.split(";")
+litho_sf_digital_data = litho_sf_digital_data.explode("Sheet_size")
+litho_sf_digital_data["Machine_size"] = litho_sf_digital_data["Sheet_size"].map(machine_sizes)
 
 # Litho Calculations
 # NOTE: Check whether to select sheetwise vs other workstyle and which to take by default
-litho_data["Workstyle"] = np.where(litho_data["Colour_code"].str[-1] == "0","Simplex","Sheetwise")
-litho_data["Front_colour"] = litho_data["Colour_code"].str.extract(r"colour_(\d)\d").astype(int)
-litho_data["Back_colour"] = litho_data["Colour_code"].str[-1].astype(int)
+litho_sf_digital_data["Workstyle"] = np.where(litho_sf_digital_data["Colour_code"].str[-1] == "0","Simplex","Sheetwise")
+litho_sf_digital_data["Front_colour"] = litho_sf_digital_data["Colour_code"].str.extract(r"colour_(\d)\d").astype(int)
+litho_sf_digital_data["Back_colour"] = litho_sf_digital_data["Colour_code"].str[-1].astype(int)
 
 # Calculating Placements
-litho_data["Placements"] = litho_data.apply(lambda x: get_placements(x["Format"], x["Sheet_size"]),axis=1)
-litho_data["printing_sheets"] = np.ceil(litho_data["Quantity"] * litho_data["PagesNumber"] / litho_data[f"Placements"]).astype(int)
+litho_sf_digital_data["Placements"] = litho_sf_digital_data.apply(lambda x: get_placements(x["Format"], x["Sheet_size"]),axis=1)
+litho_sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Placements"] > 0]
+litho_sf_digital_data["printing_sheets"] = np.ceil(litho_sf_digital_data["Quantity"] * litho_sf_digital_data["PagesNumber"] / litho_sf_digital_data[f"Placements"]).astype(int)
+litho_sf_digital_data["Height"] = litho_sf_digital_data.apply(lambda x: get_nth_value(x["Sheet_size"], " x ", 0), axis=1).astype(float) * 10
+litho_sf_digital_data["Width"] = litho_sf_digital_data.apply(lambda x: get_nth_value(x["Sheet_size"], " x ", 1), axis=1).astype(float) * 10
+litho_sf_digital_data["Sheet_size(mm)"] = litho_sf_digital_data["Height"].astype(str).replace("\.0", "", regex=True)+ "x" + litho_sf_digital_data["Width"].astype(str).replace("\.0", "", regex=True) 
+print(litho_sf_digital_data["Sheet_size(mm)"])
+litho_sf_digital_data = litho_sf_digital_data.drop(["Height", "Width"], axis=1)
+paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
+print(paper_prices)
+# TODO: Update Paper Merge based on sheet size | Check if need to update input prices with Common Sizes instead
 
-# TODO: Calculate the plates / overs
+
+
+# Split Litho and SF Digital
+litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
+sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
+
 
 litho_data["Plates"] = np.where(litho_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_data["Front_colour"] + litho_data["Back_colour"], (litho_data["Front_colour"]+litho_data["Back_colour"])/2)
 litho_data["Overs"] = litho_data["Plates"] * 50
+litho_data["Total Sheets"] = litho_data["printing_sheets"] + litho_data["Overs"]
 # Machine Prices
 
 litho_machines = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Machine Costs")
@@ -149,19 +172,35 @@ litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)
 litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
 litho_data = pd.merge(litho_data,litho_machines,"left",on="Machine_size")
 litho_data = litho_data[litho_data["Plates Costs"].isna() == False]
-litho_data["Setup Cost"] = litho_data["Setup Time"] * litho_data["Plates"] / 60 * litho_data["Cost"] + litho_data["printing_sheets"] / litho_data["Sheets / Hour"] * litho_data["Cost"]
+litho_data["Setup Cost"] = litho_data["Setup Time"] * litho_data["Plates"] / 60 * litho_data["Cost"] + litho_data["Total Sheets"] / litho_data["Sheets / Hour"] * litho_data["Cost"]
 litho_data["Plates Cost"] = litho_data["Plates"] * litho_data["Plates Costs"]
 litho_data["Litho Costs"] = litho_data["Setup Cost"] + litho_data["Plates Cost"]
 
 
+# TODO: Calculate the size for paper lookup and check for 280 GSM Price
 # Paper Costs NOTE: Applies to SF Digital as well
 
-paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
-paper_prices["Height"] = paper_prices["Size"].apply(get_dimensions)[0]
-print(paper_prices)
+# paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
+# paper_prices["Height"] = paper_prices["Size"].apply(get_dimensions)[0]
  
-# TODO: Calculate the size for paper lookup and check for 280 GSM Price
-exit()
 
-print(litho_data)
-litho_data.to_csv("test_litho.csv",index=False)
+# litho_data.to_csv("test_litho.csv",index=False)
+
+sf_digital_data["Overs"] = np.where(sf_digital_data["Back_colour"] > 0 , 4 , 2 )
+sf_digital_data["Total Sheets"] = sf_digital_data["printing_sheets"] + sf_digital_data["Overs"]
+
+clicks_costs = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Digital Clicks")
+clicks_costs = pd.melt(clicks_costs, "Attribute", var_name="Supplier", value_name="Clicks Cost")
+clicks_costs = clicks_costs[clicks_costs["Clicks Cost"]!= ""]
+clicks_costs["Machine_size"] = clicks_costs["Attribute"].str.extract(r"(A\d)")
+clicks_costs["Workstyle"] = clicks_costs["Attribute"].str.extract(r"\((.*)\)")
+clicks_costs["Clicks Cost"] = clicks_costs["Clicks Cost"].astype(float)
+clicks_costs = clicks_costs.drop("Attribute", axis=1)
+
+sf_digital_data = pd.merge(sf_digital_data, clicks_costs, "left", on=["Machine_size", "Workstyle"])
+sf_digital_data["Clicks Cost"] = sf_digital_data["Clicks Cost"] * sf_digital_data["Total Sheets"]
+sf_digital_data = sf_digital_data[sf_digital_data["Clicks Cost"] > 0]
+
+print(sf_digital_data)
+
+sf_digital_data.to_csv("test_sf_digital.csv", index=False)
