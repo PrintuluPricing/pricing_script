@@ -195,6 +195,34 @@ litho_additional = litho_additional.rename({"value": "Additional"}, axis=1)
 litho_data = pd.merge(litho_data, litho_additional, "left", on=["Supplier", "Machine_size"])
 litho_data["Printing and Paper incl Markup"] = litho_data["Printing and Paper Costs"] * (1 + litho_data["Supplier Markup"] /100 ) + litho_data["Additional"]
 
+
+# Finishing Costs
+
+finishing_costs = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Finishing")
+finishing_costs = pd.melt(finishing_costs, id_vars=["Attribute", "Calculation"], var_name="Supplier")
+finishing_costs = finishing_costs[finishing_costs["value"] != ""]
+finishing_costs["Setup-Cost"] = finishing_costs["value"].str.extract("(.*)\+")
+finishing_costs["Setup-Cost"] = pd.to_numeric(finishing_costs["Setup-Cost"],errors="coerce")
+finishing_costs["value"] = finishing_costs["value"].str.replace(".*\+","",regex=True)
+print(finishing_costs["value"])
+exit()
+
+# Extra Costs
+
+# Binding Costs
+
+
+# Refinement Costs
+
+
+
+
+
+
+
+
+
+
 # SF Digital Calculation
 sf_digital_data["Overs"] = np.where(sf_digital_data["Back_colour"] > 0 , 4 , 2 )
 sf_digital_data["Total Sheets"] = sf_digital_data["printing_sheets"] + sf_digital_data["Overs"]
