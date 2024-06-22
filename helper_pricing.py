@@ -4,7 +4,6 @@ import gspread
 import re
 
 
-
 key = "sheets_key_new.json"
 service_acc = gspread.service_account(key)
 
@@ -20,6 +19,7 @@ INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 placements = {}
 BLEED = 3
 
+cached_data = {}
 
 def get_placements(format, size):
     x, y = get_dimensions(format)
@@ -79,6 +79,8 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     return df
 
 def get_finishing_costs()-> pd.DataFrame:
+    if "finishing" in cached_data.keys():
+        return cached_data["finishing"]
     finishing = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Finishing")
     finishing = pd.melt(finishing , id_vars=["Attribute", "Calculation"], var_name="Supplier")
     finishing = finishing [finishing["value"] != ""]
@@ -90,10 +92,14 @@ def get_finishing_costs()-> pd.DataFrame:
     finishing["value"] = finishing["value"].str.replace("(/\s?1000)","",regex=True)
     finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
     finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
+    cached_data["finishing"] = finishing
     return finishing
 
 
 def get_additional()-> tuple[pd.DataFrame, pd.DataFrame]:
+    if "additional" in cached_data.keys():
+        print("Loading Data from cached")
+        return cached_data["additional"]
     additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Fixed Price")
     additional_prices = pd.melt(additional_prices, var_name="Supplier", id_vars="Attribute")
     additional_prices = additional_prices[additional_prices["value"] != ""]
@@ -101,7 +107,19 @@ def get_additional()-> tuple[pd.DataFrame, pd.DataFrame]:
     additional_prices["Machine_size"] = additional_prices["Attribute"].str.extract(r"(A\d)")
     markup = additional_prices[additional_prices["Attribute"].str.contains("Markup")].reset_index(drop=True)
     markup = markup[["Supplier", "value"]].rename({"value": "Supplier Markup"},axis=1)
+    cached_data["additional"] = additional_prices, markup
     return additional_prices, markup
+
+
+def get_paper_costs()-> pd.DataFrame:
+    if "paper" in cached_data.keys():
+        return cached_data["paper"]
+    paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
+    paper_prices = paper_prices[["Grammage", "Sheet_size", "Price incl 5%"]]
+    paper_prices = paper_prices.rename({"Grammage": "Paper", "Price incl 5%": "Paper Costs"}, axis=1)
+    paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
+    cached_data["paper"] = paper_prices
+    return paper_prices
 
 
 if __name__ == "__main__":

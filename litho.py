@@ -24,6 +24,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     litho_additional = additional_prices[additional_prices["Attribute"].str.contains("Litho")].reset_index(drop=True)
     litho_additional = pd.merge(litho_additional, markup, "left", on="Supplier")
     litho_additional = litho_additional.rename({"value": "Additional"}, axis=1)
+    litho_additional = litho_additional.drop("Attribute", axis=1)
     df = pd.merge(df, litho_additional, "left", on=["Supplier", "Machine_size"])
     df["Printing and Paper incl Markup"] = df["Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100 ) + df["Additional"]
     return df
