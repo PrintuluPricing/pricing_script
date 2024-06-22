@@ -21,11 +21,15 @@ BLEED = 3
 
 cached_data = {}
 
-def get_placements(format, size):
+def get_placements(format: str, size: str, category: str):
     x, y = get_dimensions(format)
     x = float(x) + BLEED
     y = float(y) + BLEED
+    if category == "LF Digital":
+        return 100 / x * 100 / y
     height, width = get_dimensions(size)
+    height -= categories_space[category]["height"]
+    width -= categories_space[category]["width"]
     placements1 = int(height/x * width / y)
     placements2 = int(height/y * width / x)
     placement = max(placements1, placements2)

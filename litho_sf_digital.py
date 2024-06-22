@@ -42,7 +42,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Front_colour"] = df["Colour_code"].str.extract(r"colour_(\d)\d").astype(int)
     df["Back_colour"] = df["Colour_code"].str[-1].astype(int)
     # Calculating Placements
-    df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet_size"]),axis=1)
+    df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet_size"], x["Category"]), axis=1)
     df = df[df["Placements"] > 0]
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df[f"Placements"]).astype(int)
     paper_prices = get_paper_costs()

@@ -1,7 +1,4 @@
 import pandas as pd
-import numpy as np
-import gspread
-from gspread_dataframe import set_with_dataframe
 import glob
 import sys
 import warnings
@@ -16,44 +13,58 @@ pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
 
 # Loading Data
-args = sys.argv
+# TODO: Load data based on arguments, 1 product, all products
 
 files = glob.glob("./*tp*combinations.csv")
 file_test = files[0]
 
 
+def loading_options()-> None:
+    args = sys.argv
+    print(args)
 
-finishing = get_finishing_costs()
 
-# Creating DataFrame
+def main()-> None:
+    data = pd.read_csv(file_test, keep_default_na=False)
+    categories = list(set(list(data["Category"])))
+    data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
+    data["height_width"] = data["Format"].apply(get_dimensions)
+    data["SQM"] = data["Format"].apply(get_SQM)
 
-data = pd.read_csv(file_test, keep_default_na=False)
-categories = list(set(list(data["Category"])))
+    # FIXME: Only to test remove later
+    data["Paper"] = "100gsm Gloss"
 
-# Adding basic calculations
-# Calculating pages number, SQM
-data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
-data["height_width"] = data["Format"].apply(get_dimensions)
-data["SQM"] = data["Format"].apply(get_SQM)
+    finishing = get_finishing_costs()
 
-# FIXME: Only to test remove later
-data["Paper"] = "100gsm Gloss"
+    # Splitting by category
+    litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"]== "SF Digital")]
+    lf_digital_data = data[data["Category"] == "LF Digital"]
+    litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
+    # Split Litho and SF Digital
+    litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
+    sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
+    litho_data = litho.calculation(litho_data)
+    litho_data = calculate_attributes(litho_data, finishing)
 
-# Splitting by category
-litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"]== "SF Digital")]
-lf_digital_data = data[data["Category"] == "LF Digital"]
+    # SF Digital Calculation
+    sf_digital_data = sf_digital.calculation(sf_digital_data)
+    sf_digital_data = calculate_attributes(sf_digital_data, finishing)
 
-litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
+    # LF Digital Calculation
 
-# Split Litho and SF Digital
-litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
-sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
-litho_data = litho.calculation(litho_data)
-litho_data = calculate_attributes(litho_data, finishing)
+    lf_digital_data["SQM"] = lf_digital_data["Quantity"] / lf_digital_data["SQM"]
+    print(lf_digital_data)
 
-# SF Digital Calculation
-sf_digital_data = sf_digital.calculation(sf_digital_data)
-sf_digital_data = calculate_attributes(sf_digital_data, finishing)
 
-litho_data.to_csv("test_litho.csv",index=False)
-sf_digital_data.to_csv("test_sf_digital.csv", index=False)
+if __name__ == "__main__":
+    # main()
+    loading_options()
+
+
+
+#litho_data.to_csv("test_litho.csv",index=False)
+#sf_digital_data.to_csv("test_sf_digital.csv", index=False)
+
+
+
+
