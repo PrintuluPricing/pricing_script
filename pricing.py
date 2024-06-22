@@ -8,61 +8,62 @@ import re
 import warnings
 from helper_pricing import *
 import litho_sf_digital
+import litho
 
 warnings.simplefilter(action="ignore")
 
 # Helper Functions
 # PERF: need to update the function for caching
-def get_placements1(format, category):
-    x, y = get_dimensions(format)
-    x = float(x) + BLEED
-    y = float(y) + BLEED
-    sizes = categories_sizes[category]
-    for size in sizes:
-        height, width = get_dimensions(size)
-        placements1 = int(height/x * width / y)
-        placements2 = int(height/y * width / x)
-        placement = max(placements1, placements2)
-        print(size, placement)
-        placements[format] = {size: placement}
-
-
-def get_placements(format, size):
-    x, y = get_dimensions(format)
-    x = float(x) + BLEED
-    y = float(y) + BLEED
-    height, width = get_dimensions(size)
-    placements1 = int(height/x * width / y)
-    placements2 = int(height/y * width / x)
-    placement = max(placements1, placements2)
-    placements[format] = {size: placement}
-    return placement
-
-
-def get_dimensions(size: str) -> (float, float):
-    size = size.replace("_", ".")
-    height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)",size)[0]
-    height = float(height)
-    width = float(width)
-    return height, width
-
-
-def get_SQM(format: str) -> float:
-    height, width = get_dimensions(format)
-    return height * width / 10_000
-
-
-def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
-    wb = service_acc.open(wb_name, folder)
-    ws = wb.worksheet(sheet_name)
-    values = ws.get_all_values()
-    data = pd.DataFrame(values[1:], columns=values[0])
-    return data
-
-
-def get_nth_value(x: str, delim: str, n: int)-> str:
-    return x.split(delim)[n]
-
+# def get_placements1(format, category):
+#     x, y = get_dimensions(format)
+#     x = float(x) + BLEED
+#     y = float(y) + BLEED
+#     sizes = categories_sizes[category]
+#     for size in sizes:
+#         height, width = get_dimensions(size)
+#         placements1 = int(height/x * width / y)
+#         placements2 = int(height/y * width / x)
+#         placement = max(placements1, placements2)
+#         print(size, placement)
+#         placements[format] = {size: placement}
+# 
+# 
+# def get_placements(format, size):
+#     x, y = get_dimensions(format)
+#     x = float(x) + BLEED
+#     y = float(y) + BLEED
+#     height, width = get_dimensions(size)
+#     placements1 = int(height/x * width / y)
+#     placements2 = int(height/y * width / x)
+#     placement = max(placements1, placements2)
+#     placements[format] = {size: placement}
+#     return placement
+# 
+# 
+# def get_dimensions(size: str) -> (float, float):
+#     size = size.replace("_", ".")
+#     height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)",size)[0]
+#     height = float(height)
+#     width = float(width)
+#     return height, width
+# 
+# 
+# def get_SQM(format: str) -> float:
+#     height, width = get_dimensions(format)
+#     return height * width / 10_000
+# 
+# 
+# def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
+#     wb = service_acc.open(wb_name, folder)
+#     ws = wb.worksheet(sheet_name)
+#     values = ws.get_all_values()
+#     data = pd.DataFrame(values[1:], columns=values[0])
+#     return data
+# 
+# 
+# def get_nth_value(x: str, delim: str, n: int)-> str:
+#     return x.split(delim)[n]
+# 
 
 # def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
 #     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
@@ -123,7 +124,7 @@ service_acc = gspread.service_account(key)
 #         }
 # 
 
-BLEED = 3
+# BLEED = 3
 INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
 placements = {}
@@ -157,7 +158,6 @@ lf_digital_data = data[data["Category"] == "LF Digital"]
 
 litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
 print(litho_sf_digital_data)
-exit()
 
 
 paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
@@ -174,41 +174,44 @@ litho_sf_digital_data = pd.merge(litho_sf_digital_data, paper_prices, "left", on
 # litho_sf_digital_data["Total Sheets"] = litho_sf_digital_data["printing_sheets"] + litho_sf_digital_data["Overs"]
 #
 # litho_sf_digital_data.to_csv("test_sf_digital.csv", index=False)
-# exit()
 
 
 # Markup Additional Fixed Prices Main
-additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Fixed Price")
-additional_prices = pd.melt(additional_prices, var_name="Supplier", id_vars="Attribute")
-additional_prices = additional_prices[additional_prices["value"] != ""]
-additional_prices["value"] = additional_prices["value"].astype(float)
-additional_prices["Machine_size"] = additional_prices["Attribute"].str.extract(r"(A\d)")
-markup = additional_prices[additional_prices["Attribute"].str.contains("Markup")].reset_index(drop=True)
-markup = markup[["Supplier", "value"]].rename({"value": "Supplier Markup"},axis=1)
+# additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Fixed Price")
+# additional_prices = pd.melt(additional_prices, var_name="Supplier", id_vars="Attribute")
+# additional_prices = additional_prices[additional_prices["value"] != ""]
+# additional_prices["value"] = additional_prices["value"].astype(float)
+# additional_prices["Machine_size"] = additional_prices["Attribute"].str.extract(r"(A\d)")
+# markup = additional_prices[additional_prices["Attribute"].str.contains("Markup")].reset_index(drop=True)
+# markup = markup[["Supplier", "value"]].rename({"value": "Supplier Markup"},axis=1)
 
 # Split Litho and SF Digital
 litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
 sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
 
-litho_data["Plates"] = np.where(litho_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_data["Front_colour"] + litho_data["Back_colour"], (litho_data["Front_colour"]+litho_data["Back_colour"])/2)
-litho_data["Overs"] = litho_data["Plates"] * 50
-litho_data["Total Sheets"] = litho_data["printing_sheets"] + litho_data["Overs"]
-# Machine Prices
+# litho_data["Plates"] = np.where(litho_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_data["Front_colour"] + litho_data["Back_colour"], (litho_data["Front_colour"]+litho_data["Back_colour"])/2)
+# litho_data["Overs"] = litho_data["Plates"] * 50
+# litho_data["Total Sheets"] = litho_data["printing_sheets"] + litho_data["Overs"]
+# # Machine Prices
+# 
+# litho_machines = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Machine Costs")
+# litho_machines = pd.melt(litho_machines, ["Attribute", "Category"],var_name="Supplier")
+# litho_machines = litho_machines[litho_machines["value"] != ""]
+# litho_machines["value"] = litho_machines["value"].astype(float)
+# litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
+# litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
+# litho_data = pd.merge(litho_data,litho_machines,"left",on="Machine_size")
+# litho_data = litho_data[litho_data["Plates Costs"].isna() == False]
+# litho_data["Setup Cost"] = litho_data["Setup Time"] * litho_data["Plates"] / 60 * litho_data["Cost"] + litho_data["Total Sheets"] / litho_data["Sheets / Hour"] * litho_data["Cost"]
+# litho_data["Plates Cost"] = litho_data["Plates"] * litho_data["Plates Costs"]
+# litho_data["Litho Costs"] = litho_data["Setup Cost"] + litho_data["Plates Cost"]
+# litho_data["Paper Costs"] = litho_data["Paper Costs"] * litho_data["Total Sheets"]
+# litho_data["Printing and Paper Costs"] = litho_data["Litho Costs"] + litho_data["Paper Costs"]
 
-litho_machines = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Machine Costs")
-litho_machines = pd.melt(litho_machines, ["Attribute", "Category"],var_name="Supplier")
-litho_machines = litho_machines[litho_machines["value"] != ""]
-litho_machines["value"] = litho_machines["value"].astype(float)
-litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
-litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
-litho_data = pd.merge(litho_data,litho_machines,"left",on="Machine_size")
-litho_data = litho_data[litho_data["Plates Costs"].isna() == False]
-litho_data["Setup Cost"] = litho_data["Setup Time"] * litho_data["Plates"] / 60 * litho_data["Cost"] + litho_data["Total Sheets"] / litho_data["Sheets / Hour"] * litho_data["Cost"]
-litho_data["Plates Cost"] = litho_data["Plates"] * litho_data["Plates Costs"]
-litho_data["Litho Costs"] = litho_data["Setup Cost"] + litho_data["Plates Cost"]
-litho_data["Paper Costs"] = litho_data["Paper Costs"] * litho_data["Total Sheets"]
-litho_data["Printing and Paper Costs"] = litho_data["Litho Costs"] + litho_data["Paper Costs"]
+litho_data = litho.calculation(litho_data)
+print(litho_data)
 
+exit()
 # Additional and markup
 # TODO: Check where to move based on the function
 

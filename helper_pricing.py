@@ -9,48 +9,16 @@ key = "sheets_key_new.json"
 service_acc = gspread.service_account(key)
 
 # variables
-categories_sizes = {
-    "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
-    "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
-    "LF Digital": ["100x100"],
-}
-
 categories_space = {
     "Litho": {"width": 15, "height": 5},
     "SF Digital": {"width": 1, "height": 1},
     "LF Digital": {"width": 5, "height": 5},
 }
 
-machine_sizes = {
-    '45.5 x 64': "A2",
-    '51 x 71': "A2",
-    '64 x 91.5': "A1",
-    '71 x 102': "A1",
-    '32 x 45.5': "A3",
-    '32 x 50': "A3",
-    '32 x 64': "A3",
-    '32 x 71': "A3",
-    '32 x 91.5': "A3",
-        }
-
-BLEED = 3
 INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
 placements = {}
 BLEED = 3
-
-def get_placements1(format, category):
-    x, y = get_dimensions(format)
-    x = float(x) + BLEED
-    y = float(y) + BLEED
-    sizes = categories_sizes[category]
-    for size in sizes:
-        height, width = get_dimensions(size)
-        placements1 = int(height/x * width / y)
-        placements2 = int(height/y * width / x)
-        placement = max(placements1, placements2)
-        print(size, placement)
-        placements[format] = {size: placement}
 
 
 def get_placements(format, size):
@@ -78,7 +46,7 @@ def get_SQM(format: str) -> float:
     return height * width / 10_000
 
 
-def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
+def read_google_sheet(folder: str, wb_name: str, sheet_name: str)-> pd.DataFrame :
     wb = service_acc.open(wb_name, folder)
     ws = wb.worksheet(sheet_name)
     values = ws.get_all_values()
@@ -123,6 +91,18 @@ def get_finishing_costs()-> pd.DataFrame:
     finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
     finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
     return finishing
+
+
+def get_additional()-> tuple[pd.DataFrame, pd.DataFrame]:
+    additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Fixed Price")
+    additional_prices = pd.melt(additional_prices, var_name="Supplier", id_vars="Attribute")
+    additional_prices = additional_prices[additional_prices["value"] != ""]
+    additional_prices["value"] = additional_prices["value"].astype(float)
+    additional_prices["Machine_size"] = additional_prices["Attribute"].str.extract(r"(A\d)")
+    markup = additional_prices[additional_prices["Attribute"].str.contains("Markup")].reset_index(drop=True)
+    markup = markup[["Supplier", "value"]].rename({"value": "Supplier Markup"},axis=1)
+    return additional_prices, markup
+
 
 if __name__ == "__main__":
     pass
