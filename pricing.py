@@ -62,6 +62,24 @@ def get_nth_value(x: str, delim: str, n: int)-> str:
     return x.split(delim)[n]
 
 
+def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
+    finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
+    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
+    # Extra Costs
+    extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
+    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"] + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
+    # Binding Costs # TODO: Check Later how to calculate Wiro Biniding
+    binding_costs = pd.merge(df[["Supplier", "Quantity", "Binding", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Binding"], right_on=["Supplier", "Attribute"])
+    binding_costs["Binding_costs"] = binding_costs["Setup-Cost"] + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
+    # Refinement Costs
+    refinement = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Refinement")
+    refinement = pd.melt(refinement, id_vars="Refinement", var_name="Supplier", value_name="Refinement_costs")
+    refinement = refinement[refinement["Refinement_costs"]!= "" ]
+    refinement["Refinement_costs"] = pd.to_numeric(refinement["Refinement_costs"], errors="coerce")
+
+    df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
+    df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
+
 
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
@@ -243,11 +261,12 @@ refinement["Refinement_costs"] = pd.to_numeric(refinement["Refinement_costs"], e
 
 litho_data = pd.merge(litho_data, refinement, "left", on=["Supplier", "Refinement"])
 litho_data["Refinement_costs"] = litho_data["Refinement_costs"] * litho_data["SQM"] * litho_data["Total Sheets"]
-litho_data.to_csv("test_litho.csv", index=False)
+# litho_data.to_csv("test_litho.csv", index=False)
 
 
 
-print(litho_data)
+
+print(litho_data.memory_usage())
 
 
 

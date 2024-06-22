@@ -1,0 +1,77 @@
+import pandas as pd
+import numpy as np
+
+
+
+placements = {}
+BLEED = 3
+
+def get_placements1(format, category):
+    x, y = get_dimensions(format)
+    x = float(x) + BLEED
+    y = float(y) + BLEED
+    sizes = categories_sizes[category]
+    for size in sizes:
+        height, width = get_dimensions(size)
+        placements1 = int(height/x * width / y)
+        placements2 = int(height/y * width / x)
+        placement = max(placements1, placements2)
+        print(size, placement)
+        placements[format] = {size: placement}
+
+
+def get_placements(format, size):
+    x, y = get_dimensions(format)
+    x = float(x) + BLEED
+    y = float(y) + BLEED
+    height, width = get_dimensions(size)
+    placements1 = int(height/x * width / y)
+    placements2 = int(height/y * width / x)
+    placement = max(placements1, placements2)
+    placements[format] = {size: placement}
+    return placement
+
+
+def get_dimensions(size: str) -> tuple[float, float]:
+    size = size.replace("_", ".")
+    height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)",size)[0]
+    height = float(height)
+    width = float(width)
+    return height, width
+
+
+def get_SQM(format: str) -> float:
+    height, width = get_dimensions(format)
+    return height * width / 10_000
+
+
+def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
+    wb = service_acc.open(wb_name, folder)
+    ws = wb.worksheet(sheet_name)
+    values = ws.get_all_values()
+    data = pd.DataFrame(values[1:], columns=values[0])
+    return data
+
+
+def get_nth_value(x: str, delim: str, n: int)-> str:
+    return x.split(delim)[n]
+
+
+def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
+    finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
+    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
+    # Extra Costs
+    extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
+    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"] + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
+    # Binding Costs # TODO: Check Later how to calculate Wiro Biniding
+    binding_costs = pd.merge(df[["Supplier", "Quantity", "Binding", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Binding"], right_on=["Supplier", "Attribute"])
+    binding_costs["Binding_costs"] = binding_costs["Setup-Cost"] + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
+    # Refinement Costs
+    refinement = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Refinement")
+    refinement = pd.melt(refinement, id_vars="Refinement", var_name="Supplier", value_name="Refinement_costs")
+    refinement = refinement[refinement["Refinement_costs"]!= "" ]
+    refinement["Refinement_costs"] = pd.to_numeric(refinement["Refinement_costs"], errors="coerce")
+
+    df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
+    df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
+
