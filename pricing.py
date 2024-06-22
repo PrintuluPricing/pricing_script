@@ -153,6 +153,16 @@ paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
 
 litho_sf_digital_data = pd.merge(litho_sf_digital_data, paper_prices, "left", on=["Paper", "Sheet_size"])
 
+# NOTE: FIX: Check if needed to be done for both later
+# Calculating Total Sheets for both Litho and SF Digital
+# litho_sf_digital_data["Plates"] = np.where(litho_sf_digital_data["Category"] =="Litho", np.where(litho_sf_digital_data["Workstyle"].isin(["Simplex", "Sheetwise"]), litho_sf_digital_data["Front_colour"] + litho_sf_digital_data["Back_colour"], (litho_sf_digital_data["Front_colour"]+litho_sf_digital_data["Back_colour"])/2),0)
+# litho_sf_digital_data["Overs"] = np.where(litho_sf_digital_data["Category"] == "Litho", litho_sf_digital_data["Plates"] * 50, np.where(litho_sf_digital_data["Back_colour"] > 0 , 4 , 2))
+# litho_sf_digital_data["Total Sheets"] = litho_sf_digital_data["printing_sheets"] + litho_sf_digital_data["Overs"]
+#
+# litho_sf_digital_data.to_csv("test_sf_digital.csv", index=False)
+# exit()
+
+
 # Markup Additional Fixed Prices Main
 additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Fixed Price")
 additional_prices = pd.melt(additional_prices, var_name="Supplier", id_vars="Attribute")
@@ -198,23 +208,50 @@ litho_data["Printing and Paper incl Markup"] = litho_data["Printing and Paper Co
 
 # Finishing Costs
 
-finishing_costs = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Finishing")
-finishing_costs = pd.melt(finishing_costs, id_vars=["Attribute", "Calculation"], var_name="Supplier")
-finishing_costs = finishing_costs[finishing_costs["value"] != ""]
-finishing_costs["Setup-Cost"] = finishing_costs["value"].str.extract("(.*)\+")
-finishing_costs["Setup-Cost"] = pd.to_numeric(finishing_costs["Setup-Cost"],errors="coerce")
-finishing_costs["value"] = finishing_costs["value"].str.replace(".*\+","",regex=True)
-print(finishing_costs["value"])
-exit()
+finishing = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Finishing")
+finishing = pd.melt(finishing , id_vars=["Attribute", "Calculation"], var_name="Supplier")
+finishing = finishing [finishing["value"] != ""]
+finishing["Setup-Cost"] = finishing ["value"].str.extract("(.*)\+")
+finishing["Setup-Cost"] = pd.to_numeric(finishing ["Setup-Cost"],errors="coerce")
+finishing["value"] = finishing["value"].str.replace(".*\+","",regex=True)
+finishing["/1000"] = finishing["value"].str.extract("(/\s?1000)")
+finishing["/1000"] = finishing["value"].str.contains("(/\s?1000)")
+finishing["value"] = finishing["value"].str.replace("(/\s?1000)","",regex=True)
+finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
+finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
+
+finishing_costs = pd.merge(litho_data[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
+finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
 
 # Extra Costs
+extra_costs = pd.merge(litho_data[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
+extra_costs["Extra_costs"] = extra_costs["Setup-Cost"] + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
 
-# Binding Costs
 
+
+# Binding Costs # TODO: Check Later how to calculate Wiro Biniding
+
+binding_costs = pd.merge(litho_data[["Supplier", "Quantity", "Binding", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Binding"], right_on=["Supplier", "Attribute"])
+binding_costs["Binding_costs"] = binding_costs["Setup-Cost"] + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
 
 # Refinement Costs
 
+refinement = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Refinement")
+refinement = pd.melt(refinement, id_vars="Refinement", var_name="Supplier", value_name="Refinement_costs")
+refinement = refinement[refinement["Refinement_costs"]!= "" ]
+refinement["Refinement_costs"] = pd.to_numeric(refinement["Refinement_costs"], errors="coerce")
 
+litho_data = pd.merge(litho_data, refinement, "left", on=["Supplier", "Refinement"])
+litho_data["Refinement_costs"] = litho_data["Refinement_costs"] * litho_data["SQM"] * litho_data["Total Sheets"]
+litho_data.to_csv("test_litho.csv", index=False)
+
+
+
+print(litho_data)
+
+
+
+exit()
 
 
 
