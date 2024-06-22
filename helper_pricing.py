@@ -122,5 +122,32 @@ def get_paper_costs()-> pd.DataFrame:
     return paper_prices
 
 
+def get_clicks()-> pd.DataFrame:
+    if "clicks" in cached_data.keys():
+        return cached_data["clicks"]
+    clicks_costs = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Digital Clicks")
+    clicks_costs = pd.melt(clicks_costs, "Attribute", var_name="Supplier", value_name="Clicks Cost")
+    clicks_costs = clicks_costs[clicks_costs["Clicks Cost"]!= ""]
+    clicks_costs["Machine_size"] = clicks_costs["Attribute"].str.extract(r"(A\d)")
+    clicks_costs["Workstyle"] = clicks_costs["Attribute"].str.extract(r"\((.*)\)")
+    clicks_costs["Clicks Cost"] = clicks_costs["Clicks Cost"].astype(float)
+    clicks_costs = clicks_costs.drop("Attribute", axis=1)
+    cached_data["clicks"] = clicks_costs
+    return clicks_costs
+
+
+def get_litho_machines()-> pd.DataFrame:
+    if "litho_machines" in cached_data.keys():
+        return cached_data["litho_machines"]
+    litho_machines = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Machine Costs")
+    litho_machines = pd.melt(litho_machines, ["Attribute", "Category"],var_name="Supplier")
+    litho_machines = litho_machines[litho_machines["value"] != ""]
+    litho_machines["value"] = litho_machines["value"].astype(float)
+    litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
+    litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
+    cached_data["litho_machines"] = litho_machines
+    return litho_machines
+
+
 if __name__ == "__main__":
     pass

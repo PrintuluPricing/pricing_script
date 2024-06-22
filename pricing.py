@@ -21,11 +21,7 @@ args = sys.argv
 files = glob.glob("./*tp*combinations.csv")
 file_test = files[0]
 
-key = "sheets_key_new.json"
-service_acc = gspread.service_account(key)
-INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
-placements = {}
 
 finishing = get_finishing_costs()
 
@@ -47,13 +43,7 @@ data["Paper"] = "100gsm Gloss"
 litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"]== "SF Digital")]
 lf_digital_data = data[data["Category"] == "LF Digital"]
 
-
-
 litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
-print(litho_sf_digital_data)
-
-
-
 
 # Split Litho and SF Digital
 litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
@@ -62,9 +52,8 @@ litho_data = litho.calculation(litho_data)
 litho_data = calculate_attributes(litho_data, finishing)
 
 # SF Digital Calculation
-
 sf_digital_data = sf_digital.calculation(sf_digital_data)
-print(sf_digital_data)
+sf_digital_data = calculate_attributes(sf_digital_data, finishing)
 
 litho_data.to_csv("test_litho.csv",index=False)
 sf_digital_data.to_csv("test_sf_digital.csv", index=False)

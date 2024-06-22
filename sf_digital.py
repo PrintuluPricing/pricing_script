@@ -1,21 +1,15 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import read_google_sheet, get_additional, INPUT_PRICES_FOLDER
+from helper_pricing import get_additional, get_clicks
 
 
-def calculation(df: pd.DataFrame)-> pd.DataFrame:
-    df["Overs"] = np.where(df["Back_colour"] > -1 , 4 , 2 )
+def calculation(df: pd.DataFrame) -> pd.DataFrame:
+    df["Overs"] = np.where(df["Back_colour"] > 0, 4, 2)
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"]
-    clicks_costs = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Digital Clicks")
-    clicks_costs = pd.melt(clicks_costs, "Attribute", var_name="Supplier", value_name="Clicks Cost")
-    clicks_costs = clicks_costs[clicks_costs["Clicks Cost"]!= ""]
-    clicks_costs["Machine_size"] = clicks_costs["Attribute"].str.extract(r"(A\d)")
-    clicks_costs["Workstyle"] = clicks_costs["Attribute"].str.extract(r"\((.*)\)")
-    clicks_costs["Clicks Cost"] = clicks_costs["Clicks Cost"].astype(float)
-    clicks_costs = clicks_costs.drop("Attribute", axis=1)
+    clicks_costs = get_clicks()
     df = pd.merge(df, clicks_costs, "left", on=["Machine_size", "Workstyle"])
     df["Clicks Cost"] = df["Clicks Cost"] * df["Total Sheets"]
-    df = df[df["Clicks Cost"] > -1]
+    df = df[df["Clicks Cost"] > 0]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]
     df["Printing and Paper Costs"] = df["Clicks Cost"] + df["Paper Costs"]
     additional_prices, markup = get_additional()

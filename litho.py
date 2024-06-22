@@ -1,18 +1,13 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import read_google_sheet, get_additional, INPUT_PRICES_FOLDER
+from helper_pricing import get_additional, get_litho_machines
 
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
     df["Overs"] = df["Plates"] * 50
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"]
-    litho_machines = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Machine Costs")
-    litho_machines = pd.melt(litho_machines, ["Attribute", "Category"],var_name="Supplier")
-    litho_machines = litho_machines[litho_machines["value"] != ""]
-    litho_machines["value"] = litho_machines["value"].astype(float)
-    litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
-    litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
+    litho_machines = get_litho_machines()
     df = pd.merge(df,litho_machines,"left",on="Machine_size")
     df = df[df["Plates Costs"].isna() == False]
     df["Setup Cost"] = df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Sheets"] / df["Sheets / Hour"] * df["Cost"]
