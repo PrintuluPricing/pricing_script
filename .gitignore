@@ -4,3 +4,4 @@
 *.csv
 .fuse*
 .~*
+__pycache__

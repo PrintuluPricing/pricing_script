@@ -1,7 +1,40 @@
 import pandas as pd
 import numpy as np
+import gspread
+import re
 
 
+
+key = "sheets_key_new.json"
+service_acc = gspread.service_account(key)
+
+# variables
+categories_sizes = {
+    "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
+    "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
+    "LF Digital": ["100x100"],
+}
+
+categories_space = {
+    "Litho": {"width": 15, "height": 5},
+    "SF Digital": {"width": 1, "height": 1},
+    "LF Digital": {"width": 5, "height": 5},
+}
+
+machine_sizes = {
+    '45.5 x 64': "A2",
+    '51 x 71': "A2",
+    '64 x 91.5': "A1",
+    '71 x 102': "A1",
+    '32 x 45.5': "A3",
+    '32 x 50': "A3",
+    '32 x 64': "A3",
+    '32 x 71': "A3",
+    '32 x 91.5': "A3",
+        }
+
+BLEED = 3
+INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
 placements = {}
 BLEED = 3
@@ -53,11 +86,11 @@ def read_google_sheet(folder: str, wb_name: str, sheet_name: str):
     return data
 
 
-def get_nth_value(x: str, delim: str, n: int)-> str:
+def get_nth_value(x: str, delim: str, n: int) -> str:
     return x.split(delim)[n]
 
 
-def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
+def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFrame:
     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
     finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
     # Extra Costs
@@ -74,4 +107,22 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
 
     df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
     df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
+    print(df)
+    return df
 
+def get_finishing_costs()-> pd.DataFrame:
+    finishing = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Finishing")
+    finishing = pd.melt(finishing , id_vars=["Attribute", "Calculation"], var_name="Supplier")
+    finishing = finishing [finishing["value"] != ""]
+    finishing["Setup-Cost"] = finishing ["value"].str.extract("(.*)\+")
+    finishing["Setup-Cost"] = pd.to_numeric(finishing ["Setup-Cost"],errors="coerce")
+    finishing["value"] = finishing["value"].str.replace(".*\+","",regex=True)
+    finishing["/1000"] = finishing["value"].str.extract("(/\s?1000)")
+    finishing["/1000"] = finishing["value"].str.contains("(/\s?1000)")
+    finishing["value"] = finishing["value"].str.replace("(/\s?1000)","",regex=True)
+    finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
+    finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
+    return finishing
+
+if __name__ == "__main__":
+    pass
