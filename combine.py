@@ -21,17 +21,31 @@ product_codes = list(set(list(products["productCode"])))
 attributes = pd.DataFrame(attribute_data[1:],columns=attribute_data[0])
 
 cols = ["Category", "Product", "Sheets", "Paper", "Colour", "Format",
-        "Finishing", "Extra", "Binding", "Refinement", "Quantity", "Markup"]
+        "Finishing", "Extra", "Binding", "Refinement", "Quantity", "Printing Markup", "Finishing Markup", "Binding Markup", "Option Markup","Refinement Markup"]
 cols1 = ["Sheets", "Paper", "Colour", "Format",
         "Finishing", "Extra", "Binding", "Refinement"]
 
+col_code_lookup = {
+        "Paper": "paper",
+        "Format": "format",
+        "Sheets": "pages",
+        "Colour": "colors",
+        "Binding": "book_binding",
+        "Refinement": "refinement",
+        "Finishing": "finishing",
+        "Extra": "options",
+        }
+
+
 for code in product_codes:
-    data = products[products["productCode"]==code]
+    data = products[products["productCode"] == code]
     data = data.drop_duplicates().reset_index(drop=True)
-    data = data.pivot(index="productCode",columns="Type")
+    data = data.pivot(index="productCode", columns="Type")
     data.columns = data.columns.droplevel()
     data["Product"] = code
     data = data.reset_index(drop=True)
+    data[["Printing Markup", "Finishing Markup", "Binding Markup", "Option Markup", "Refinement Markup"]] = data["Markup"].str.split(";", expand=True)
+    data = data.drop("Markup", axis=1)
     for col in data.columns:
         data[col] = data[col].str.split(";")
         data = data.explode(col)
@@ -41,6 +55,7 @@ for code in product_codes:
             merged = pd.merge(data, attributes_data, "left",
                                  right_on="attribute_name", left_on=col).reset_index(drop=True)
             col_codes = merged["code"]
-            data[f"{col}_code"] = col_codes
-            cols.append(f"{col}_code")
+            # data[f"{col}_code"] = col_codes
+            data[col_code_lookup[col]] = col_codes
+            cols.append(col_code_lookup[col])
     data[cols].to_csv(f"{code}_combinations.csv", index=False)

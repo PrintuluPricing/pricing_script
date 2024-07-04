@@ -4,6 +4,8 @@ from helper_pricing import get_additional, get_clicks
 
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
+    if len(df) == 0:
+        return df
     df["Overs"] = np.where(df["Back_colour"] > 0, 4, 2)
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"]
     clicks_costs = get_clicks()

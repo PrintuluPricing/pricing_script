@@ -38,9 +38,9 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Machine_size"] = df["Sheet_size"].map(machine_sizes)
     # Litho Calculations
     # NOTE: Check whether to select sheetwise vs other workstyle and which to take by default
-    df["Workstyle"] = np.where(df["Colour_code"].str[-1] == "0","Simplex","Sheetwise")
-    df["Front_colour"] = df["Colour_code"].str.extract(r"colour_(\d)\d").astype(int)
-    df["Back_colour"] = df["Colour_code"].str[-1].astype(int)
+    df["Workstyle"] = np.where(df["colors"].str[-1] == "0","Simplex","Sheetwise")
+    df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype(int)
+    df["Back_colour"] = df["colors"].str[-1].astype(int)
     # Calculating Placements
     df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet_size"], x["Category"]), axis=1)
     df = df[df["Placements"] > 0]
