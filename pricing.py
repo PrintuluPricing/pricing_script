@@ -19,7 +19,7 @@ pd.set_option('display.width', 2000)
 files = glob.glob("./*tp*combinations.csv")
 print(files)
 # FIX: Testing Only remove Later
-file_test = files[0]
+file_test = files[1]
 
 
 def loading_options() -> None:
@@ -31,7 +31,11 @@ def main() -> None:
     data = pd.read_csv(file_test, keep_default_na=False)
     categories = list(set(list(data["Category"])))
     data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
-    data["height_width"] = data["Format"].apply(get_dimensions)
+    data["GSM"] = data["Paper"].str.extract("(\d+)gsm")
+    # data["height_width"] = data["Format"].apply(get_dimensions)
+    data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(get_dimensions)[0]
+    data["Length (mm)"] = data["Height (cm)"] * 10
+    print(data)
     data["SQM"] = data["Format"].apply(get_SQM)
 
     finishing = get_finishing_costs()
