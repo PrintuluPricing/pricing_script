@@ -38,6 +38,7 @@ col_code_lookup = {
 
 
 for code in product_codes:
+    new_cols = cols.copy()
     data = products[products["productCode"] == code]
     data = data.drop_duplicates().reset_index(drop=True)
     data = data.pivot(index="productCode", columns="Type")
@@ -57,5 +58,5 @@ for code in product_codes:
             col_codes = merged["code"]
             # data[f"{col}_code"] = col_codes
             data[col_code_lookup[col]] = col_codes
-            cols.append(col_code_lookup[col])
-    data[cols].to_csv(f"{code}_combinations.csv", index=False)
+            new_cols.append(col_code_lookup[col])
+    data[new_cols].to_csv(f"{code}_combinations.csv", index=False)

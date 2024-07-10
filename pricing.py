@@ -20,7 +20,7 @@ pd.set_option('display.width', 2000)
 files = glob.glob("./*tp*combinations.csv")
 print(files)
 # FIX: Testing Only remove Later
-file_test = files[1]
+file_test = files[2]
 
 
 def loading_options() -> None:
@@ -63,7 +63,10 @@ def main() -> None:
         lf_digital_data = data[data["Category"] == "LF Digital"]
         lf_digital_data["SQM"] = lf_digital_data["Quantity"] / lf_digital_data["SQM"]
         # Calculate printing Costs
+        print(lf_digital_data.columns)
         lf_digital_data = lf_digital.calculation(lf_digital_data)
+        print(lf_digital_data.columns)
+        exit()
         lf_digital_data.to_csv("test_lf_digital.csv")
 
 
