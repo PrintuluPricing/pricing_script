@@ -1,8 +1,6 @@
 import pandas as pd
-import numpy as np
 import gspread
-import re
-from helper_pricing import read_google_sheet, cached_data
+from helper_pricing import get_wiro_pur_binding_costs, get_wiro_thickness, get_wiro_length
 
 
 INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
@@ -36,9 +34,8 @@ service_acc = gspread.service_account(key)
 def get_closest_length():
     pass
 
-binding_thickness = [1,115,20,12]
-
 def get_closest_thickness(thickness):
+    binding_thickness = get_wiro_thickness()
     if thickness in binding_thickness:
         return thickness
     binding_thickness_bigger = [qty for qty in binding_thickness if qty > thickness]
@@ -46,24 +43,29 @@ def get_closest_thickness(thickness):
         return max(binding_thickness)
     return sorted(binding_thickness_bigger)[0] if len(binding_thickness_bigger) > 0 else min(binding_thickness)
 
+def get_closest_length(length):
+    binding_length = get_wiro_length()
+    if length in binding_length:
+        return length
+    binding_length_bigger = [qty for qty in binding_length if qty > length]
+    if length > max(binding_length):
+        return max(binding_length)
+    return sorted(binding_length_bigger)[0] if len(binding_length_bigger) > 0 else min(binding_length)
+
 
 def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
-    if "wiro" in cached_data.keys():
-        binding_prices = cached_data["wiro"]
-    # Include dataframe
-    # thickness = df["GSM"] * df["PagesNumber"] / 2000 + 4 # Calculate the thickness in mm
-    # df["Length (mm)"]
-    binding_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Binding")
-    binding_prices = pd.melt(binding_prices, id_vars=["Attribute", "Length", "Setup"], var_name="Thickness")
-    binding_prices = binding_prices[binding_prices["value"] != ""]
-    # binding_prices[["Length", "Setup", "value", "Thickness"]] = pd.to_numeric(binding_prices[["Length", "Setup", "value", "Thickness"]])
-    binding_prices["value"] = pd.to_numeric(binding_prices["value"], errors="coerce")
-    cached_data["wiro"] = binding_prices
-    binding_thickness = list(set(binding_prices["Thickness"]))
-    binding_thickness = [float(thic) for thic in binding_thickness]
-    print(binding_thickness)
+    df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
+    df["Thickness"] = df["Thickness"].apply(get_closest_thickness).astype(str).str.replace("\.0","")
+    df["Thickness"] = df["Thickness"].str.replace("\.0", "", regex=True)
+    df["Length"] = df["Length"].apply(get_closest_length).astype(str)
+    df["Length"] = df["Length"].replace("\.0", "", regex=True)
+    wiro_prices = get_wiro_pur_binding_costs()[0]
+    # FIX: Check the filter later based on the binding attribute name (Calendar Hanger, Pur, Wiro)
+    wiro_prices = wiro_prices[wiro_prices["Attribute"] == "Wiro"]
+    wiro_costs = pd.merge(df, wiro_prices, "left", on=["Thickness", "Length"])
+    df["Wiro Costs"] = wiro_costs["value"] * df["Quantity"] + wiro_costs["Setup"]
+    return df
 
 
 if __name__ == "__main__":
-    # calculate_binding(None)
-    print(get_closest_thickness(180))
+    pass

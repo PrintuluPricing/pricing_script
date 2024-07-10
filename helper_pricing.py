@@ -219,6 +219,38 @@ def get_lf_material() -> pd.DataFrame:
     return lf_material
 
 
+def get_wiro_pur_binding_costs() -> pd.DataFrame:
+    if "wiro" in cached_data.keys():
+        return cached_data["wiro"], cached_data["wiro_thickness"]
+    binding_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Binding")
+    binding_prices = pd.melt(binding_prices, id_vars=["Attribute", "Length", "Setup"], var_name="Thickness")
+    binding_prices = binding_prices[binding_prices["value"] != ""]
+    #FIX: Check the filter laterrrrr!!!!
+    binding_prices = binding_prices[binding_prices["Attribute"] == "Wiro"]
+    binding_prices["value"] = pd.to_numeric(binding_prices["value"], errors="coerce")
+    binding_prices["Setup"] = pd.to_numeric(binding_prices["Setup"], errors="coerce")
+    cached_data["wiro"] = binding_prices
+    binding_thickness = list(set(binding_prices["Thickness"]))
+    binding_thickness = [float(thic) for thic in binding_thickness]
+    binding_length = list(set(binding_prices["Length"]))
+    binding_length = [float(thic) for thic in binding_length]
+    cached_data["wiro_thickness"] = binding_thickness
+    cached_data["wiro_length"] = binding_length
+    return binding_prices, binding_thickness, binding_length
+
+
+def get_wiro_thickness() -> pd.DataFrame:
+    if "wiro_thickness" in cached_data.keys():
+        return cached_data["wiro_thickness"]
+    wiro_thickness = get_wiro_pur_binding_costs()[1]
+    return wiro_thickness
+
+
+def get_wiro_length() -> pd.DataFrame:
+    if "wiro_length" in cached_data.keys():
+        return cached_data["wiro_length"]
+    wiro_length = get_wiro_pur_binding_costs()[1]
+    return wiro_length
 
 
 if __name__ == "__main__":

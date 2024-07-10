@@ -2,6 +2,7 @@ import pandas as pd
 import glob
 import sys
 import warnings
+from binding import calculate_binding
 from helper_pricing import get_finishing_costs, get_dimensions, get_SQM, calculate_attributes
 import litho_sf_digital
 import litho
@@ -34,7 +35,7 @@ def main() -> None:
     data["GSM"] = data["Paper"].str.extract("(\d+)gsm")
     # data["height_width"] = data["Format"].apply(get_dimensions)
     data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(get_dimensions)[0]
-    data["Length (mm)"] = data["Height (cm)"] * 10
+    data["Length"] = data["Height (cm)"] * 10
     print(data)
     data["SQM"] = data["Format"].apply(get_SQM)
 
@@ -49,6 +50,7 @@ def main() -> None:
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
         litho_data = litho.calculation(litho_data)
         litho_data = calculate_attributes(litho_data, finishing)
+        litho_data = calculate_binding(litho_data)
 
         # SF Digital Calculation
         sf_digital_data = sf_digital.calculation(sf_digital_data)
