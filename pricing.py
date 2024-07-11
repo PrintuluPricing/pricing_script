@@ -36,7 +36,6 @@ def main() -> None:
     # data["height_width"] = data["Format"].apply(get_dimensions)
     data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(get_dimensions)[0]
     data["Length"] = data["Height (cm)"] * 10
-    print(data)
     data["SQM"] = data["Format"].apply(get_SQM)
 
     finishing = get_finishing_costs()
@@ -63,16 +62,15 @@ def main() -> None:
         lf_digital_data = data[data["Category"] == "LF Digital"]
         lf_digital_data["SQM"] = lf_digital_data["Quantity"] / lf_digital_data["SQM"]
         # Calculate printing Costs
-        print(lf_digital_data.columns)
         lf_digital_data = lf_digital.calculation(lf_digital_data)
-        print(lf_digital_data.columns)
-        exit()
         lf_digital_data.to_csv("test_lf_digital.csv")
 
 
+# TODO: Shipping Prices
+# TODO: Cheapest combination for highest supplier
+# TODO: Exclude Suppliers missing combination prices
 
 
-        print(lf_digital_data)
 
 
 if __name__ == "__main__":

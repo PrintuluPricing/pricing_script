@@ -219,6 +219,18 @@ def get_lf_material() -> pd.DataFrame:
     return lf_material
 
 
+def get_lf_extra() -> pd.DataFrame:
+    if "lf_extra" in cached_data.keys():
+        return cached_data["lf_extra"]
+    lf_extra = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "LF Extra")
+    lf_extra = pd.melt(lf_extra, "Attribute", var_name="Supplier")
+    lf_extra = lf_extra[lf_extra["value"] != ""]
+    lf_extra["value"] = pd.to_numeric(lf_extra["value"])
+    lf_extra = lf_extra.rename({"value": "LF Extra", "Attribute": "Extra"}, axis=1)
+    cached_data["lf_extra"] = lf_extra
+    return lf_extra
+
+
 def get_wiro_pur_binding_costs() -> pd.DataFrame:
     if "wiro" in cached_data.keys():
         return cached_data["wiro"], cached_data["wiro_thickness"]
