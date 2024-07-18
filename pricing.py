@@ -30,6 +30,8 @@ def loading_options() -> None:
 
 def main() -> None:
     data = pd.read_csv(file_test, keep_default_na=False)
+    print(data.memory_usage())
+    exit()
     categories = list(set(list(data["Category"])))
     data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
     data["GSM"] = data["Paper"].str.extract("(\d+)gsm")

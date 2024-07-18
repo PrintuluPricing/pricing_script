@@ -233,22 +233,35 @@ def get_lf_extra() -> pd.DataFrame:
 
 def get_wiro_pur_binding_costs() -> pd.DataFrame:
     if "wiro" in cached_data.keys():
-        return cached_data["wiro"], cached_data["wiro_thickness"]
+        return cached_data["wiro"], cached_data["wiro_thickness"], cached_data["wiro_length"], cached_data["hangers"], cached_data["hanger_length"], cached_data["pur"], cached_data["pur_thickness"], cached_data["pur_quantity"]
     binding_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Binding")
-    binding_prices = pd.melt(binding_prices, id_vars=["Attribute", "Length", "Setup"], var_name="Thickness")
+    binding_prices = pd.melt(binding_prices, id_vars=["Attribute", "Length", "Setup", "Quantity"], var_name="Thickness")
     binding_prices = binding_prices[binding_prices["value"] != ""]
-    #FIX: Check the filter laterrrrr!!!!
-    binding_prices = binding_prices[binding_prices["Attribute"] == "Wiro"]
     binding_prices["value"] = pd.to_numeric(binding_prices["value"], errors="coerce")
     binding_prices["Setup"] = pd.to_numeric(binding_prices["Setup"], errors="coerce")
-    cached_data["wiro"] = binding_prices
-    binding_thickness = list(set(binding_prices["Thickness"]))
-    binding_thickness = [float(thic) for thic in binding_thickness]
-    binding_length = list(set(binding_prices["Length"]))
-    binding_length = [float(thic) for thic in binding_length]
-    cached_data["wiro_thickness"] = binding_thickness
-    cached_data["wiro_length"] = binding_length
-    return binding_prices, binding_thickness, binding_length
+    binding_prices["Quantity"] = pd.to_numeric(binding_prices["Quantity"], errors="coerce")
+    wiro_prices = binding_prices[(binding_prices["Attribute"].str.contains("Wiro Binding"))& (binding_prices["Attribute"].str.contains("Hanger") == False) ]
+    hangers_prices = binding_prices[binding_prices["Attribute"].str.contains("Hanger")]
+    pur_prices = binding_prices[binding_prices["Attribute"].str.contains("PUR")]
+    del (binding_prices)
+    cached_data["wiro"] = wiro_prices
+    cached_data["hangers"] = hangers_prices
+    cached_data["pur"] = pur_prices
+    wiro_thickness = list(set(wiro_prices["Thickness"]))
+    wiro_thickness = [float(thic) for thic in wiro_thickness]
+    wiro_length = list(set(wiro_prices["Length"]))
+    wiro_length = [float(thic) for thic in wiro_length]
+    hanger_length = list(set(hangers_prices["Length"]))
+    hanger_length = [float(thic) for thic in hanger_length]
+    pur_thickness = list(set(pur_prices["Thickness"]))
+    pur_thickness = [float(thic) for thic in pur_thickness]
+    pur_quantity = list(set(pur_prices["quantity"]))
+    cached_data["wiro_thickness"] = wiro_thickness
+    cached_data["wiro_length"] = wiro_length
+    cached_data["hanger_length"] = hanger_length
+    cached_data["pur_thickness"] = pur_thickness
+    cached_data["pur_quantity"]
+    return wiro_prices, wiro_thickness, wiro_length, hangers_prices, hanger_length, pur_prices, pur_thickness, pur_quantity
 
 
 def get_wiro_thickness() -> pd.DataFrame:
@@ -261,9 +274,27 @@ def get_wiro_thickness() -> pd.DataFrame:
 def get_wiro_length() -> pd.DataFrame:
     if "wiro_length" in cached_data.keys():
         return cached_data["wiro_length"]
-    wiro_length = get_wiro_pur_binding_costs()[1]
+    wiro_length = get_wiro_pur_binding_costs()[2]
     return wiro_length
 
 
+def get_pur_thickness() -> pd.DataFrame:
+    if "pur_thickness" in cached_data.keys():
+        return cached_data["pur_thickness"]
+    pur_thickness = get_pur_pur_binding_costs()[5]
+    return pur_thickness
+
+
+def get_hanger_length() -> pd.DataFrame:
+    if "hanger_length" in cached_data.keys():
+        return cached_data["hanger_length"]
+    hanger_length = get_hanger_pur_binding_costs()[3]
+    return hanger_length
+
 if __name__ == "__main__":
+    get_wiro_pur_binding_costs()
+    print(get_wiro_length())
+    print(get_wiro_thickness())
+    print(get_pur_thickness())
+    print(get_hanger_length())
     pass

@@ -1,0 +1,16 @@
+Combinations to include:
+
+- Ganging Quantities
+- Ganging Quantity : 1 or 0
+- Ganging Min Placement : 2
+- Ganging Max Sheets : 10000
+
+
+
+
+Ganging Calculation:
+
+1 - Ganging Quantity => pagesNumber * Quantity / 1 (if pagesIsSheet) else 2
+2 - Ganging Utilization => for each litho size => Ganging Quantity / Placement{Size} * Paper Utilization for the size (Almost 0.5)
+3 - Check if ganging is possible for each size => Placements{size} > Min Ganging Placements (2)  AND Quantity / Placements{Size} > Ganging Max sheets (10000)
+4- If ganging is possible do the normal litho calculation based on the ganging quantity and placements

@@ -22,4 +22,16 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     litho_additional = litho_additional.drop("Attribute", axis=1)
     df = pd.merge(df, litho_additional, "left", on=["Supplier", "Machine_size"])
     df["Printing and Paper incl Markup"] = df["Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100 ) + df["Additional"]
+
+    # FIXME: Update Later
+
+    # df["Ganging Min Placements"] = 2
+    # df["Ganging Max Sheets"] = 1000
+
+    df["Ganging"] = True # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
+
+    df["Ganging Quantity"] = df["PagesNumber"] * df["Quantity"]
+    df["Ganging Utilization"] = 0.5
+    df["Ganging Possible"] = np.where((df["Ganging"]) & (df["Placements"] >= 2) & (df["Quantity"] * df["PagesNumber"] / df["Placements"] <= 10000) 
+
     return df
