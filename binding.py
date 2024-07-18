@@ -1,6 +1,6 @@
 import pandas as pd
 import gspread
-from helper_pricing import get_wiro_pur_binding_costs, get_wiro_thickness, get_wiro_length, get_pur_thickness, get_hanger_length, get_pur_quantity
+from helper_pricing import get_wiro_pur_binding_costs, get_wiro_thickness, get_wiro_length, get_pur_thickness, get_hanger_length, get_pur_quantity, get_wiro_pur_binding_costs
 
 INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
@@ -26,20 +26,10 @@ service_acc = gspread.service_account(key)
 # TODO: Pur Binding Calculation
 # 1. Create the thickness length for Wiro, length for Hangers and thickness for PUR Binding
 # 2. Add Columns to df => pd.apply => Wiro Length, Wiro Thickness, Hangers Length, Hangers Length, PUR THICKNESS
-# 3. Merge Pricing with 
+# 3. Merge Pricing with
 
 
-
-# Calculate the thickness
-
-# Old Pricing -> Setup Cost 350
-
-
-def get_closest_length():
-    pass
-
-def get_closest_thickness(thickness):
-    binding_thickness = get_wiro_thickness()
+def get_closest_thickness(thickness, binding_thickness):
     if thickness in binding_thickness:
         return thickness
     binding_thickness_bigger = [qty for qty in binding_thickness if qty > thickness]
@@ -47,8 +37,16 @@ def get_closest_thickness(thickness):
         return max(binding_thickness)
     return sorted(binding_thickness_bigger)[0] if len(binding_thickness_bigger) > 0 else min(binding_thickness)
 
-def get_closest_length(length):
-    binding_length = get_wiro_length()
+
+def get_closest_wiro_thickness(thickness):
+    return get_closest_thickness(thickness, get_wiro_thickness())
+
+
+def get_closest_pur_thickness(thickness):
+    return get_closest_thickness(thickness, get_pur_thickness())
+
+
+def get_closest_length(length, binding_length):
     if length in binding_length:
         return length
     binding_length_bigger = [qty for qty in binding_length if qty > length]
@@ -57,15 +55,22 @@ def get_closest_length(length):
     return sorted(binding_length_bigger)[0] if len(binding_length_bigger) > 0 else min(binding_length)
 
 
+def get_closest_wiro_length(length):
+    return get_closest_length(length, get_wiro_length())
+
+
+def get_closest_hanger_length(length):
+    return get_closest_length(length, get_hanger_length())
+
+
 def get_closest_quantities(quantity):
     pur_quantity = get_pur_quantity()
     if quantity in pur_quantity:
         return quantity
-    pur_quantity_bigger = [qty for qty in binding_length if qty > length]
+    pur_quantity_bigger = [qty for qty in pur_quantity if qty > quantity]
     if quantity > max(pur_quantity):
         return max(pur_quantity)
     return sorted(pur_quantity_bigger)[0] if len(pur_quantity_bigger) > 0 else min(pur_quantity)
-
 
 
 def calculate_wiro_binding(df: pd.DataFrame) -> pd.DataFrame:
@@ -78,35 +83,44 @@ def calculate_wiro_binding(df: pd.DataFrame) -> pd.DataFrame:
     # FIX: Check the filter later based on the binding attribute name (Calendar Hanger, Pur, Wiro)
     wiro_prices = wiro_prices[wiro_prices["Attribute"] == "Wiro"]
     wiro_costs = pd.merge(df, wiro_prices, "left", on=["Thickness", "Length"])
-    df["Wiro Costs"] = wiro_costs["value"] * df["Quantity"] + wiro_costs["Setup"]
-    return df
-
-
-def calculate_hanger_binding(df: pd.DataFrame) -> pd.DataFrame:
-    df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
-    df["Thickness"] = df["Thickness"].apply(get_closest_thickness).astype(str).str.replace("\.0","")
-    df["Thickness"] = df["Thickness"].str.replace("\.0", "", regex=True)
-    df["Length"] = df["Length"].apply(get_closest_length).astype(str)
-    df["Length"] = df["Length"].replace("\.0", "", regex=True)
-    wiro_prices = get_wiro_pur_binding_costs()[0]
-    # FIX: Check the filter later based on the binding attribute name (Calendar Hanger, Pur, Wiro)
-    wiro_prices = wiro_prices[wiro_prices["Attribute"] == "Wiro"]
-    wiro_costs = pd.merge(df, wiro_prices, "left", on=["Thickness", "Length"])
     df["Wiro Costs"] = wiro_costs["value"] * wiro_costs["Quantity"] + wiro_costs["Setup"]
     return df
 
+# TODO: Check for the closest thickness / Length to take the next bigger and not the smaller
+def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
+    # FIX: To Remove Later
+    df["Binding"] = "A2 Wiro Binding - Black with Hanger"
 
-def calculate_pur_binding(df: pd.DataFrame) -> pd.DataFrame:
+
     df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
-    df["Thickness"] = df["Thickness"].apply(get_closest_thickness).astype(str).str.replace("\.0","")
-    df["Thickness"] = df["Thickness"].str.replace("\.0", "", regex=True)
-    df["Length"] = df["Length"].apply(get_closest_length).astype(str)
-    df["Length"] = df["Length"].replace("\.0", "", regex=True)
-    pur = get_wiro_pur_binding_costs()[0]
-    wiro_prices = wiro_prices[wiro_prices["Attribute"] == "Wiro"]
-    wiro_costs = pd.merge(df, wiro_prices, "left", on=["Thickness", "Length"])
-    df["Wiro Costs"] = wiro_costs["value"] * df["Quantity"] + wiro_costs["Setup"]
-    return df
+    df["Wiro Thickness"] = df["Thickness"].apply(get_closest_wiro_thickness).astype(str).str.replace("\.0","")
+    df["Pur Thickness"] = df["Thickness"].apply(get_closest_pur_thickness).astype(str).str.replace("\.0","")
+    df["Pur Thickness"] = df["Pur Thickness"].str.replace("\.0", "", regex=True)
+    df["Wiro Thickness"] = df["Wiro Thickness"].str.replace("\.0", "", regex=True)
+    df["Wiro Length"] = df["Length"].apply(get_closest_wiro_length).astype(str)
+    df["Wiro Length"] = df["Wiro Length"].replace("\.0", "", regex=True)
+    df["Hanger Length"] = df["Length"].apply(get_closest_hanger_length).astype(str)
+    df["Hanger Length"] = df["Hanger Length"].replace("\.0", "", regex=True)
+    df["Pur Quantity"] = df["Quantity"].apply(get_closest_quantities)
+
+    wiro_prices = get_wiro_pur_binding_costs()[0]
+    wiro_prices = df[["Binding", "Wiro Length", "Wiro Thickness", "Quantity"]].merge(wiro_prices, "left", left_on=["Binding", "Wiro Length", "Wiro Thickness"], right_on=["Attribute", "Length", "Thickness"])
+    wiro_prices["Wiro Costs"] = wiro_prices["Setup"] + wiro_prices["value"] * wiro_prices["Quantity_x"]
+    df["Wiro Costs"] = wiro_prices["Wiro Costs"].fillna(0)
+    del (wiro_prices)
+
+    pur_prices = get_wiro_pur_binding_costs()[5]
+    pur_prices = df[["Binding", "Pur Thickness", "Quantity", "Pur Quantity"]].merge(pur_prices, "left", left_on=["Binding", "Pur Thickness", "Pur Quantity"], right_on=["Attribute", "Thickness", "Quantity"])
+    pur_prices["Pur Costs"] = pur_prices["Setup"] + pur_prices["value"] * pur_prices["Quantity_x"]
+    df["Pur Costs"] = pur_prices["Pur Costs"].fillna(0)
+    del (pur_prices)
+
+    hangers_prices = get_wiro_pur_binding_costs()[3]
+    hangers_prices = df[["Binding", "Hanger Length", "Quantity"]].merge(hangers_prices, "left", left_on=["Binding", "Hanger Length"], right_on=["Attribute", "Length"])
+    hangers_prices["Hangers Costs"] = hangers_prices["Setup"] + hangers_prices["value"] * hangers_prices["Quantity_x"]
+    df["Hangers Costs"] = hangers_prices["Hangers Costs"].fillna(0)
+    del (hangers_prices)
+    df["Binding Prices"] = df["Wiro Costs"] + df["Hangers Costs"] + df["Pur Costs"]
 
 
 if __name__ == "__main__":

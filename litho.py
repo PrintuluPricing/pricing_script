@@ -32,6 +32,5 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df["Ganging Quantity"] = df["PagesNumber"] * df["Quantity"]
     df["Ganging Utilization"] = 0.5
-    df["Ganging Possible"] = np.where((df["Ganging"]) & (df["Placements"] >= 2) & (df["Quantity"] * df["PagesNumber"] / df["Placements"] <= 10000) 
-
+    df["Ganging Possible"] =(df["Ganging"]) & (df["Placements"] >= 2) & (df["Quantity"] * df["PagesNumber"] / df["Placements"] <= 10000)
     return df

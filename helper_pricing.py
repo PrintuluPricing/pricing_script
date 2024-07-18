@@ -85,10 +85,13 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Binding_costs"] = binding_costs["Binding_costs"]
     df["Extra_costs"] = extra_costs["Extra_costs"]
 
+    del (finishing_costs)
+    del (binding_costs)
+    del (extra_costs)
+
     df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
     df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
     df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
-    print(df)
     return df
 
 def get_finishing_costs()-> pd.DataFrame:
@@ -237,10 +240,14 @@ def get_wiro_pur_binding_costs() -> pd.DataFrame:
     binding_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Binding")
     binding_prices = pd.melt(binding_prices, id_vars=["Attribute", "Length", "Setup", "Quantity"], var_name="Thickness")
     binding_prices = binding_prices[binding_prices["value"] != ""]
+    binding_prices["Thickness"] = pd.to_numeric(binding_prices["Thickness"]).astype(str)
+    binding_prices["Thickness"] = binding_prices["Thickness"].replace("\.0", "", regex=True)
+    binding_prices["Length"] = pd.to_numeric(binding_prices["Length"]).astype(str)
+    binding_prices["Length"] = binding_prices["Length"].replace("\.0", "", regex=True)
     binding_prices["value"] = pd.to_numeric(binding_prices["value"], errors="coerce")
     binding_prices["Setup"] = pd.to_numeric(binding_prices["Setup"], errors="coerce")
     binding_prices["Quantity"] = pd.to_numeric(binding_prices["Quantity"], errors="coerce")
-    wiro_prices = binding_prices[(binding_prices["Attribute"].str.contains("Wiro Binding"))& (binding_prices["Attribute"].str.contains("Hanger") == False) ]
+    wiro_prices = binding_prices[(binding_prices["Attribute"].str.contains("Wiro Binding"))& (binding_prices["Attribute"].str.contains("Hanger") == False) | (binding_prices["Attribute"].str.contains("Spiral"))]
     hangers_prices = binding_prices[binding_prices["Attribute"].str.contains("Hanger")]
     pur_prices = binding_prices[binding_prices["Attribute"].str.contains("PUR")]
     del (binding_prices)
@@ -255,12 +262,12 @@ def get_wiro_pur_binding_costs() -> pd.DataFrame:
     hanger_length = [float(thic) for thic in hanger_length]
     pur_thickness = list(set(pur_prices["Thickness"]))
     pur_thickness = [float(thic) for thic in pur_thickness]
-    pur_quantity = list(set(pur_prices["quantity"]))
+    pur_quantity = list(set(pur_prices["Quantity"]))
     cached_data["wiro_thickness"] = wiro_thickness
     cached_data["wiro_length"] = wiro_length
     cached_data["hanger_length"] = hanger_length
     cached_data["pur_thickness"] = pur_thickness
-    cached_data["pur_quantity"]
+    cached_data["pur_quantity"] = pur_quantity
     return wiro_prices, wiro_thickness, wiro_length, hangers_prices, hanger_length, pur_prices, pur_thickness, pur_quantity
 
 
@@ -281,20 +288,23 @@ def get_wiro_length() -> pd.DataFrame:
 def get_pur_thickness() -> pd.DataFrame:
     if "pur_thickness" in cached_data.keys():
         return cached_data["pur_thickness"]
-    pur_thickness = get_pur_pur_binding_costs()[5]
+    pur_thickness = get_wiro_pur_binding_costs()[6]
     return pur_thickness
 
 
 def get_hanger_length() -> pd.DataFrame:
     if "hanger_length" in cached_data.keys():
         return cached_data["hanger_length"]
-    hanger_length = get_hanger_pur_binding_costs()[3]
+    hanger_length = get_wiro_pur_binding_costs()[4]
     return hanger_length
 
+
+def get_pur_quantity() -> pd.DataFrame:
+    if "pur_quantity" in cached_data.keys():
+        return cached_data["pur_quantity"]
+    hanger_length = get_wiro_pur_binding_costs()[7]
+    return hanger_length
+
+
 if __name__ == "__main__":
-    get_wiro_pur_binding_costs()
-    print(get_wiro_length())
-    print(get_wiro_thickness())
-    print(get_pur_thickness())
-    print(get_hanger_length())
     pass

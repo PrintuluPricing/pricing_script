@@ -20,7 +20,8 @@ pd.set_option('display.width', 2000)
 files = glob.glob("./*tp*combinations.csv")
 print(files)
 # FIX: Testing Only remove Later
-file_test = files[2]
+
+file_test = files[5] # 2 for LF and 5 for Litho
 
 
 def loading_options() -> None:
@@ -30,8 +31,6 @@ def loading_options() -> None:
 
 def main() -> None:
     data = pd.read_csv(file_test, keep_default_na=False)
-    print(data.memory_usage())
-    exit()
     categories = list(set(list(data["Category"])))
     data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
     data["GSM"] = data["Paper"].str.extract("(\d+)gsm")
@@ -52,6 +51,7 @@ def main() -> None:
         litho_data = litho.calculation(litho_data)
         litho_data = calculate_attributes(litho_data, finishing)
         litho_data = calculate_binding(litho_data)
+        exit()
 
         # SF Digital Calculation
         sf_digital_data = sf_digital.calculation(sf_digital_data)
