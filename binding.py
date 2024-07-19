@@ -9,26 +9,6 @@ key = "sheets_key_new.json"
 service_acc = gspread.service_account(key)
 
 
-# TODO: Wiro Calculation
-# Calculate Paper Thickness
-
-# Paper Thickness = gsm * pages Number /2000 + 4 => Paper thickness in mm
-
-# Check which part of the format is the length
-
-# The wiro costs in the old pricing is supposed to be with setup cost of 200
-
-# Old Pricing has setup cost of 200
-
-# Setup Cost with Future Fusion is 350 and not 200
-
-
-# TODO: Pur Binding Calculation
-# 1. Create the thickness length for Wiro, length for Hangers and thickness for PUR Binding
-# 2. Add Columns to df => pd.apply => Wiro Length, Wiro Thickness, Hangers Length, Hangers Length, PUR THICKNESS
-# 3. Merge Pricing with
-
-
 def get_closest_thickness(thickness, binding_thickness):
     if thickness in binding_thickness:
         return thickness
@@ -73,25 +53,7 @@ def get_closest_quantities(quantity):
     return sorted(pur_quantity_bigger)[0] if len(pur_quantity_bigger) > 0 else min(pur_quantity)
 
 
-def calculate_wiro_binding(df: pd.DataFrame) -> pd.DataFrame:
-    df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
-    df["Thickness"] = df["Thickness"].apply(get_closest_thickness).astype(str).str.replace("\.0","")
-    df["Thickness"] = df["Thickness"].str.replace("\.0", "", regex=True)
-    df["Length"] = df["Length"].apply(get_closest_length).astype(str)
-    df["Length"] = df["Length"].replace("\.0", "", regex=True)
-    wiro_prices = get_wiro_pur_binding_costs()[0]
-    # FIX: Check the filter later based on the binding attribute name (Calendar Hanger, Pur, Wiro)
-    wiro_prices = wiro_prices[wiro_prices["Attribute"] == "Wiro"]
-    wiro_costs = pd.merge(df, wiro_prices, "left", on=["Thickness", "Length"])
-    df["Wiro Costs"] = wiro_costs["value"] * wiro_costs["Quantity"] + wiro_costs["Setup"]
-    return df
-
-# TODO: Check for the closest thickness / Length to take the next bigger and not the smaller
 def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
-    # FIX: To Remove Later
-    df["Binding"] = "A2 Wiro Binding - Black with Hanger"
-
-
     df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
     df["Wiro Thickness"] = df["Thickness"].apply(get_closest_wiro_thickness).astype(str).str.replace("\.0","")
     df["Pur Thickness"] = df["Thickness"].apply(get_closest_pur_thickness).astype(str).str.replace("\.0","")
