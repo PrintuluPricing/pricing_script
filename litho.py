@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_additional, get_litho_machines
+from helper_pricing import get_additional, get_litho_machines, get_litho_utilization
 
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
@@ -8,9 +8,12 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
     df["Ganging"] = True
 
+    litho_utilization = get_litho_utilization()
+    df = df.merge(litho_utilization, "left", on=["Paper", "Sheet Size"])
+
     df["Ganging Quantity"] = df["PagesNumber"] * df["Quantity"]
     df["Ganging Sheets"] = df["Ganging Quantity"] / df["Placements"]
-    df["Ganging Utilization"] = 0.5
+    # df["Ganging Utilization"] = 0.5
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
        df["Ganging Sheets"] <= 10000)
 

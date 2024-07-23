@@ -131,7 +131,7 @@ def get_paper_costs()-> pd.DataFrame:
     if "paper" in cached_data.keys():
         return cached_data["paper"]
     paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
-    paper_prices = paper_prices[["Grammage", "Sheet_size", "Price incl 5%"]]
+    paper_prices = paper_prices[["Grammage", "Sheet Size", "Price incl 5%"]]
     paper_prices = paper_prices.rename({"Grammage": "Paper", "Price incl 5%": "Paper Costs"}, axis=1)
     paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
     cached_data["paper"] = paper_prices
@@ -269,6 +269,15 @@ def get_wiro_pur_binding_costs() -> pd.DataFrame:
     cached_data["pur_thickness"] = pur_thickness
     cached_data["pur_quantity"] = pur_quantity
     return wiro_prices, wiro_thickness, wiro_length, hangers_prices, hanger_length, pur_prices, pur_thickness, pur_quantity
+
+
+def get_litho_utilization()-> pd.DataFrame:
+    if "litho_utilization" in cached_data.keys():
+        return cached_data["litho_utilization"]
+    litho_utilization = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Litho Utilization")
+    print(litho_utilization)
+    cached_data["litho_utilization"] = litho_utilization
+    return litho_utilization
 
 
 def get_wiro_thickness() -> pd.DataFrame:
