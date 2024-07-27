@@ -2,8 +2,6 @@ import pandas as pd
 import gspread
 
 
-
-
 # Reading the products data from google sheets
 key = "sheets_key_new.json"
 service_acc = gspread.service_account(key)
@@ -25,7 +23,7 @@ attributes = pd.DataFrame(attribute_data[1:],columns=attribute_data[0])
 negative_rules_data = pd.DataFrame(negative_rules_data[1:],columns=negative_rules_data[0])
 
 cols = ["Category", "Product", "Sheets", "Paper", "Colour", "Format",
-        "Finishing", "Extra", "Binding", "Refinement", "Quantity", "Printing Markup", "Finishing Markup", "Binding Markup", "Option Markup","Refinement Markup"]
+        "Finishing", "Extra", "Binding", "Refinement", "Quantity", "Printing Markup", "Finishing Markup", "Binding Markup", "Option Markup","Refinement Markup", "Ganging Possible"]
 cols1 = ["Sheets", "Paper", "Colour", "Format",
         "Finishing", "Extra", "Binding", "Refinement"]
 
