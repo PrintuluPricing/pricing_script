@@ -21,16 +21,14 @@ files = glob.glob("./*tp*combinations.csv")
 print(files)
 # FIX: Testing Only remove Later
 
-file_test = files[5] # 2 for LF and 5 for Litho
-
 
 def loading_options() -> None:
     args = sys.argv
     print(args)
 
 
-def main() -> None:
-    data = pd.read_csv(file_test, keep_default_na=False)
+def main(file) -> None:
+    data = pd.read_csv(file, keep_default_na=False)
     categories = list(set(list(data["Category"])))
     data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
     data["GSM"] = data["Paper"].str.extract("(\d+)gsm")
@@ -51,7 +49,6 @@ def main() -> None:
         litho_data = litho.calculation(litho_data)
         litho_data = calculate_attributes(litho_data, finishing)
         litho_data = calculate_binding(litho_data)
-        exit()
 
         # SF Digital Calculation
         sf_digital_data = sf_digital.calculation(sf_digital_data)
@@ -65,7 +62,7 @@ def main() -> None:
         lf_digital_data["SQM"] = lf_digital_data["Quantity"] / lf_digital_data["SQM"]
         # Calculate printing Costs
         lf_digital_data = lf_digital.calculation(lf_digital_data)
-        lf_digital_data.to_csv("test_lf_digital.csv")
+        lf_digital_data.to_csv(f"{file}_output.csv", index=False)
 
 
 # TODO: Shipping Prices
@@ -76,7 +73,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-    # loading_options()
+    for file in files:
+        print(file)
+        main(file)
+        print(f"{file} done")
 
 

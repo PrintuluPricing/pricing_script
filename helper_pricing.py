@@ -131,6 +131,7 @@ def get_paper_costs()-> pd.DataFrame:
     if "paper" in cached_data.keys():
         return cached_data["paper"]
     paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
+    print(paper_prices.columns)
     paper_prices = paper_prices[["Grammage", "Sheet Size", "Price incl 5%"]]
     paper_prices = paper_prices.rename({"Grammage": "Paper", "Price incl 5%": "Paper Costs"}, axis=1)
     paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
@@ -313,6 +314,9 @@ def get_pur_quantity() -> pd.DataFrame:
         return cached_data["pur_quantity"]
     hanger_length = get_wiro_pur_binding_costs()[7]
     return hanger_length
+
+def get_weights() -> pd.DataFrame:
+    pass
 
 
 if __name__ == "__main__":
