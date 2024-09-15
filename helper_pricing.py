@@ -40,7 +40,10 @@ def get_placements(format: str, size: str, category: str) -> int | float:
 
 def get_dimensions(size: str) -> tuple[float, float]:
     size = size.replace("_", ".")
-    height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)", size)[0]
+    try:
+        height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)", size)[0]
+    except:
+        height, width = 1, 1
     height = float(height)
     width = float(width)
     return height, width
@@ -215,7 +218,7 @@ def get_lf_material() -> pd.DataFrame:
     if "lf_material" in cached_data.keys():
         return cached_data["lf_material"]
     lf_material = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "LF Material")
-    lf_material = pd.melt(lf_material, "Attribute", var_name="Supplier")
+    lf_material = pd.melt(lf_material, ["Attribute","GSM"], var_name="Supplier")
     lf_material = lf_material[lf_material["value"] != ""]
     lf_material["value"] = pd.to_numeric(lf_material["value"])
     lf_material = lf_material.rename({"value": "LF Material", "Attribute": "Paper"}, axis=1)
@@ -276,7 +279,6 @@ def get_litho_utilization()-> pd.DataFrame:
     if "litho_utilization" in cached_data.keys():
         return cached_data["litho_utilization"]
     litho_utilization = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Litho Utilization")
-    print(litho_utilization)
     cached_data["litho_utilization"] = litho_utilization
     return litho_utilization
 
@@ -317,6 +319,14 @@ def get_pur_quantity() -> pd.DataFrame:
 
 def get_weights() -> pd.DataFrame:
     pass
+
+
+def get_shipping_costs() -> pd.DataFrame:
+    if "shipping" in cached_data.keys():
+        return cached_data["shipping"]
+    shipping = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Shipping")
+    print(shipping)
+    return shipping
 
 
 if __name__ == "__main__":

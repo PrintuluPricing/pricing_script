@@ -31,11 +31,11 @@ def main(file) -> None:
     data = pd.read_csv(file, keep_default_na=False)
     categories = list(set(list(data["Category"])))
     data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
-    data["GSM"] = data["Paper"].str.extract("(\d+)gsm")
     # data["height_width"] = data["Format"].apply(get_dimensions)
     data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(get_dimensions)[0]
     data["Length"] = data["Height (cm)"] * 10
     data["SQM"] = data["Format"].apply(get_SQM)
+    # TODO: Calculate Overs!!!
 
     finishing = get_finishing_costs()
 

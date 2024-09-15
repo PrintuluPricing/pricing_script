@@ -32,6 +32,7 @@ machine_sizes = {
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     global machine_sizes
     global categories_sizes
+    df["GSM"] = df["Paper"].str.extract("(\d+)gsm")
     df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
     df["Sheet Size"] = df["Sheet Size"].str.split(";")
     df = df.explode("Sheet Size")
