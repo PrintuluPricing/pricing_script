@@ -59,7 +59,7 @@ def main(file) -> None:
     if "LF Digital" in categories:
         # LF Digital Calculation
         lf_digital_data = data[data["Category"] == "LF Digital"]
-        lf_digital_data["SQM"] = lf_digital_data["Quantity"] / lf_digital_data["SQM"]
+        lf_digital_data["SQM"] = lf_digital_data["Quantity"]/(10_000  / (lf_digital_data["SQM"] *10_000))
         # Calculate printing Costs
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         lf_digital_data.to_csv(f"{file}_output.csv", index=False)
@@ -68,8 +68,10 @@ def main(file) -> None:
 # TODO: Shipping Prices
 # TODO: Cheapest combination for highest supplier
 # TODO: Exclude Suppliers missing combination prices
-
-
+# TODO: Add Refinement, Extra and Finishing Weight
+# TODO: Calculate Shipping Costs
+# TODO: Calculate OverPrinting for Deskpad
+# TODO: Recalculate Ganging
 
 
 if __name__ == "__main__":
@@ -77,5 +79,3 @@ if __name__ == "__main__":
         print(file)
         main(file)
         print(f"{file} done")
-
-

@@ -221,6 +221,7 @@ def get_lf_material() -> pd.DataFrame:
     lf_material = pd.melt(lf_material, ["Attribute","GSM"], var_name="Supplier")
     lf_material = lf_material[lf_material["value"] != ""]
     lf_material["value"] = pd.to_numeric(lf_material["value"])
+    lf_material["GSM"] = pd.to_numeric(lf_material["GSM"])
     lf_material = lf_material.rename({"value": "LF Material", "Attribute": "Paper"}, axis=1)
     cached_data["lf_material"] = lf_material
     return lf_material
