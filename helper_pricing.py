@@ -288,6 +288,7 @@ def get_wiro_thickness() -> pd.DataFrame:
     if "wiro_thickness" in cached_data.keys():
         return cached_data["wiro_thickness"]
     wiro_thickness = get_wiro_pur_binding_costs()[1]
+    cached_data["wiro_thickness"] = wiro_thickness
     return wiro_thickness
 
 
@@ -295,6 +296,7 @@ def get_wiro_length() -> pd.DataFrame:
     if "wiro_length" in cached_data.keys():
         return cached_data["wiro_length"]
     wiro_length = get_wiro_pur_binding_costs()[2]
+    cached_data["wiro_length"] = wiro_length
     return wiro_length
 
 
@@ -302,6 +304,7 @@ def get_pur_thickness() -> pd.DataFrame:
     if "pur_thickness" in cached_data.keys():
         return cached_data["pur_thickness"]
     pur_thickness = get_wiro_pur_binding_costs()[6]
+    cached_data["pur_thickness"] = pur_thickness
     return pur_thickness
 
 
@@ -309,26 +312,37 @@ def get_hanger_length() -> pd.DataFrame:
     if "hanger_length" in cached_data.keys():
         return cached_data["hanger_length"]
     hanger_length = get_wiro_pur_binding_costs()[4]
+    cached_data["hanger_length"] = hanger_length
     return hanger_length
 
 
 def get_pur_quantity() -> pd.DataFrame:
     if "pur_quantity" in cached_data.keys():
         return cached_data["pur_quantity"]
-    hanger_length = get_wiro_pur_binding_costs()[7]
-    return hanger_length
-
-def get_weights() -> pd.DataFrame:
-    pass
+    pur_quantity = get_wiro_pur_binding_costs()[7]
+    cached_data["pur_quantity"] = pur_quantity
+    return pur_quantity
 
 
 def get_shipping_costs() -> pd.DataFrame:
     if "shipping" in cached_data.keys():
         return cached_data["shipping"]
-    shipping = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Shipping")
-    print(shipping)
+    shipping = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Shipping").iloc[0, :]
+    shipping = pd.to_numeric(shipping, errors="coerce")
+    cached_data["shipping"] = shipping
     return shipping
 
 
+def get_weights() -> pd.DataFrame:
+    if "weights" in cached_data.keys():
+        return cached_data["weights"]
+    weights = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "GSM")
+    weights = weights[weights["GSM"] != ""].reset_index(drop=True)
+    weights["GSM"] = pd.to_numeric(weights["GSM"])
+    cached_data["weights"] = weights
+    return weights
+
+
 if __name__ == "__main__":
+    get_shipping_costs()
     pass

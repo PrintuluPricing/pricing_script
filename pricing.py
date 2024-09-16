@@ -27,9 +27,23 @@ def loading_options() -> None:
     print(args)
 
 
+def format_final_ouput(df: pd.DataFrame) -> pd.DataFrame:
+    # FIXME: Check where in the script duplicates are being removed incorrectly or combinations are incorrect
+    df["Unit Price"] = df["Total Costs"] / df["Quantity"]
+    df["price"] = 1
+    df = df.drop_duplicates(["price", "productpart", "paper", "format", "pages", "Quantity",
+                            "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
+    df.to_csv(f"{file}_test_final_output.csv")
+    df = pd.pivot_table(df, values="Unit Price", columns="Quantity", aggfunc="sum", index=[
+                             "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
+    return df
+
+
 def main(file) -> None:
     data = pd.read_csv(file, keep_default_na=False)
+    data = data.rename({"Product": "productpart"}, axis=1)
     categories = list(set(list(data["Category"])))
+    data["file_type"] = "#"
     data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
     # data["height_width"] = data["Format"].apply(get_dimensions)
     data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(get_dimensions)[0]
@@ -63,12 +77,11 @@ def main(file) -> None:
         # Calculate printing Costs
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         lf_digital_data.to_csv(f"{file}_output.csv", index=False)
+        format_final_ouput(lf_digital_data).to_csv(f"{file}_final_output.csv")
 
 
-# TODO: Shipping Prices
 # TODO: Cheapest combination for highest supplier
-# TODO: Exclude Suppliers missing combination prices
-# TODO: Add Refinement, Extra and Finishing Weight
+# TODO: Add Refinement, Extra and Finishing Weight for litho and sf_digital
 # TODO: Calculate Shipping Costs
 # TODO: Calculate OverPrinting for Deskpad
 # TODO: Recalculate Ganging
