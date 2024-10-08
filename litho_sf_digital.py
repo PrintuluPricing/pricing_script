@@ -32,20 +32,27 @@ machine_sizes = {
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     global machine_sizes
     global categories_sizes
-    df["GSM"] = df["Paper"].str.extract("(\d+)gsm")
+    df["GSM"] =df["Paper"].str.extract("(\d+)gsm")
+    df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
     df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
     df["Sheet Size"] = df["Sheet Size"].str.split(";")
     df = df.explode("Sheet Size")
+    df["Sheet Size"] = df["Sheet Size"].astype('category')
     df["Machine_size"] = df["Sheet Size"].map(machine_sizes)
+    df["Machine_size"] = df["Machine_size"].astype('category')
     # Litho Calculations
     # NOTE: Check whether to select sheetwise vs other workstyle and which to take by default
     df["Workstyle"] = np.where(df["colors"].str[-1] == "0","Simplex","Sheetwise")
-    df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype(int)
-    df["Back_colour"] = df["colors"].str[-1].astype(int)
+    df["Workstyle"] = df["Workstyle"].astype('category')
+    df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype('int8')
+    df["Back_colour"] = df["colors"].str[-1].astype('int8')
     # Calculating Placements
-    df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1)
+    df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1).astype('int16')
     df = df[df["Placements"] > 0]
-    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df[f"Placements"]).astype(int)
+    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]).astype('int16')
     paper_prices = get_paper_costs()
     df = pd.merge(df, paper_prices, "left", on=["Paper", "Sheet Size"])
+    del paper_prices
+    print(df.dtypes)
+    print(df["Quantity"].value_counts())
     return df

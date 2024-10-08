@@ -28,7 +28,7 @@ def get_placements(format: str, size: str, category: str) -> int | float:
     y = float(y) + BLEED
     if category == "LF Digital":
         return (100 / x * 100 / y)
-    height, width = get_dimensions(size)
+    [height, width] = get_dimensions(size)
     height -= categories_space[category]["height"]
     width -= categories_space[category]["width"]
     placements1 = int(height/x * width / y)
@@ -38,8 +38,8 @@ def get_placements(format: str, size: str, category: str) -> int | float:
     return placement
 
 
-def get_dimensions(size: str) -> tuple[float, float]:
-    size = size.replace("_", ".")
+def get_dimensions(size) -> tuple[float, float]:
+    size = str(size).replace("_", ".")
     try:
         height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)", size)[0]
     except:
@@ -67,11 +67,13 @@ def get_nth_value(x: str, delim: str, n: int) -> str:
 
 
 def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFrame:
+    print("Calculating Attributes: ", len(df))
     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
     finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
     finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
     # Extra Costs
     extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
+    print("Extra Costs ", len(extra_costs))
     extra_costs["Extra_costs"] = extra_costs["Setup-Cost"] + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
     # Binding Costs # TODO: Check Later how to calculate Wiro Biniding
@@ -87,7 +89,12 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Finishing_costs"] = finishing_costs["Finishing_costs"]
     df["Binding_costs"] = binding_costs["Binding_costs"]
     df["Extra_costs"] = extra_costs["Extra_costs"]
+    print(extra_costs[extra_costs["Extra_costs"].isna()])
+    print(len(df))
 
+    print(df["Extra_costs"].value_counts())
+    print(df["Finishing_costs"].value_counts())
+    print(df["Binding_costs"].value_counts())
     del (finishing_costs)
     del (binding_costs)
     del (extra_costs)
@@ -95,6 +102,14 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
     df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
     df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
+
+    df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
+    df["Extra Costs"] = df["Extra_costs"] * (1 + df["Option Markup"] /100)
+    df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
+
+    df["Total Costs"] = df["Printing and Paper incl Markup"] + df["Shipping Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
+
+    print("Finished Attributes: ", len(df))
     return df
 
 def get_finishing_costs()-> pd.DataFrame:
@@ -280,6 +295,7 @@ def get_litho_utilization()-> pd.DataFrame:
     if "litho_utilization" in cached_data.keys():
         return cached_data["litho_utilization"]
     litho_utilization = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Litho Utilization")
+    litho_utilization["Ganging Utilization"] = pd.to_numeric(litho_utilization["Ganging Utilization"], errors="coerce")
     cached_data["litho_utilization"] = litho_utilization
     return litho_utilization
 
@@ -344,5 +360,4 @@ def get_weights() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    get_shipping_costs()
     pass

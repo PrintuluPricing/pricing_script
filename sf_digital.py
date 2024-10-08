@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_additional, get_clicks
+from helper_pricing import get_additional, get_clicks, get_weights, get_paper_costs, get_shipping_costs
 
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
+    print("SF Digital calculation started   :", len(df))
     if len(df) == 0:
         return df
     df["Overs"] = np.where(df["Back_colour"] > 0, 4, 2)
@@ -21,4 +22,33 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     sf_digital_additional = sf_digital_additional.drop("Attribute", axis=1)
     df = pd.merge(df, sf_digital_additional, "left", on=["Supplier", "Machine_size"])
     df["Printing and Paper incl Markup"] = df["Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100 ) + df["Additional"]
+    df = df[df["Printing and Paper incl Markup"].isna() == False]
+# Weight Calculation
+
+    weights = get_weights()
+    refinement_weights = weights[weights["Type"] == "Refinement"]  # .reset_index(drop=True)
+    refinement_weights = df[["Refinement"]].merge(refinement_weights, "left", left_on="Refinement", right_on="Attribute")
+    df["Refinement GSM"] = refinement_weights["GSM"]
+    del refinement_weights
+    extra_weights = weights[weights["Type"] == "Extra"]  # .reset_index(drop=True)
+    extra_weights = df[["Extra"]].merge(extra_weights, "left", left_on="Extra", right_on="Attribute")
+    df["Extra GSM"] = extra_weights["GSM"]
+    del extra_weights
+    df["Refinement GSM"] = df["Refinement GSM"].fillna(0)
+    df["Extra GSM"] = df["Extra GSM"].fillna(0)
+    df["GSM"] = df["GSM"] + df["Refinement GSM"] + df["Extra GSM"]
+    df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
+
+# Shipping Costs
+
+    shipping_costs = get_shipping_costs()
+    df["Remaining"] = np.floor(df["Total Weight"] - shipping_costs["Minimum KG"])
+    df["Remaining"] = np.where(df["Remaining"] < 0, 0, df["Remaining"])
+    df["Shipping Costs"] = df["Remaining"] * shipping_costs["Kg After"] + shipping_costs["Minimum"]
+
+
+    # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Updated Later
+    print("SF Digital calculation ended   :", len(df))
+    df.to_csv("SF Digital Extraction.csv")
+
     return df

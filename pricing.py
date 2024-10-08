@@ -8,87 +8,123 @@ import litho_sf_digital
 import litho
 import sf_digital
 import lf_digital
+from datetime import datetime
 
 warnings.simplefilter(action="ignore")
 
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
 
-# Loading Data
-# TODO: Load data based on arguments, 1 product, all products
 
-files = glob.glob("./*tp*combinations.csv")
-print(files)
-# FIX: Testing Only remove Later
-
-
-def loading_options() -> None:
+def loading_options() -> list[str]:
     args = sys.argv
-    print(args)
+    files = args[1:]
+    return files
 
 
-def format_final_ouput(df: pd.DataFrame) -> pd.DataFrame:
-    # FIXME: Check where in the script duplicates are being removed incorrectly or combinations are incorrect
-    df["Unit Price"] = df["Total Costs"] / df["Quantity"]
-    df["price"] = 1
-    df = df.drop_duplicates(["price", "productpart", "paper", "format", "pages", "Quantity",
-                            "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
-    df.to_csv(f"{file}_test_final_output.csv")
-    df = pd.pivot_table(df, values="Unit Price", columns="Quantity", aggfunc="sum", index=[
-                             "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
-    return df
+def main(files: list[str]) -> pd.DataFrame:
+    data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra']
 
 
-def main(file) -> None:
-    data = pd.read_csv(file, keep_default_na=False)
+    columns = ["price", "productpart", "paper", "format", "pages", "Quantity",
+               "colors", "book_binding", "refinement", "finishing", "options", "file_type"]
+    data = pd.concat(pd.read_csv(file, keep_default_na=False) for file in files)
+    data = data[data_columns]
+    cat_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options',
+                  'SuperCategory', 'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Sheets', 'Extra']
+
+    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup',]# 'Quantity']
+
+    start = datetime.now()
+    data[cat_columns] = data[cat_columns].astype('category')
+    data[num_columns] = data[num_columns].astype('int8')
+    data["Quantity"] = data["Quantity"].astype('int32')
+    print(f"Casting took {datetime.now() - start}")
+    products = list(set(list(data["Product"])))
     data = data.rename({"Product": "productpart"}, axis=1)
+
+    print(len(data))
     categories = list(set(list(data["Category"])))
     data["file_type"] = "#"
-    data["PagesNumber"] = data["Sheets"].str.extract(r"(\d+)").astype(int)
-    # data["height_width"] = data["Format"].apply(get_dimensions)
-    data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(get_dimensions)[0]
+    data["file_type"] = data["file_type"].astype('category')
+    data["PagesNumber"] = data["pages"].str.extract(r"(\d+)")
+    data["PagesNumber"] = pd.to_numeric(data["PagesNumber"], errors="coerce").astype('int16')
+    data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(
+        get_dimensions).to_list()
+    data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('int16')
     data["Length"] = data["Height (cm)"] * 10
+    data["Length"] = data["Length"].astype('int16')
     data["SQM"] = data["Format"].apply(get_SQM)
-    # TODO: Calculate Overs!!!
 
+    lf_digital_data = data[data["Category"] == "LF Digital"]
+    litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
     finishing = get_finishing_costs()
+    del data
 
+    dfs = []
     if "Litho" in categories or "SF Digital" in categories:
-        litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
         litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
         # Splitting by category
         # Split Litho and SF Digital
+
         litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
         litho_data = litho.calculation(litho_data)
         litho_data = calculate_attributes(litho_data, finishing)
         litho_data = calculate_binding(litho_data)
 
+        if len(litho_data) > 0:
+            dfs.append(litho_data)
+            del litho_data
         # SF Digital Calculation
         sf_digital_data = sf_digital.calculation(sf_digital_data)
         sf_digital_data = calculate_attributes(sf_digital_data, finishing)
-        litho_data.to_csv("test_litho.csv",index=False)
-        sf_digital_data.to_csv("test_sf_digital.csv", index=False)
+        sf_digital_data = calculate_binding(sf_digital_data)
+
+        if len(sf_digital_data) > 0:
+            dfs.append(sf_digital_data)
+            del sf_digital_data
+            exit()
 
     if "LF Digital" in categories:
-        # LF Digital Calculation
-        lf_digital_data = data[data["Category"] == "LF Digital"]
+        #NOTE:  LF Digital Calculation
         lf_digital_data["SQM"] = lf_digital_data["Quantity"]/(10_000  / (lf_digital_data["SQM"] *10_000))
-        # Calculate printing Costs
+        #NOTE: Calculate printing Costs
         lf_digital_data = lf_digital.calculation(lf_digital_data)
-        lf_digital_data.to_csv(f"{file}_output.csv", index=False)
-        format_final_ouput(lf_digital_data).to_csv(f"{file}_final_output.csv")
+        if len(lf_digital_data) > 0:
+            dfs.append(lf_digital_data)
 
+    print("Collecting Data")
+    output_data = pd.concat(dfs)
+    print("Reached")
+    del dfs
+    print(output_data.columns)
+    output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {datetime.now()}.csv")
+    output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {datetime.now()} no_prices.csv")
+    output_data = output_data[output_data["Total Costs"].isna() == False]
+    output_data = output_data.sort_values("Total Costs", ascending=False)
+    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier"])
+    output_data = output_data.sort_values("Total Costs", ascending=True)
+    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options"])
+    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {datetime.now()}.csv")
+    output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
+    output_data["price"] = 1
+    output_data = output_data.sort_values("Total Costs", ascending=False)
+    output_data = output_data.drop_duplicates(columns)
+    output_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="sum", index=[
+                             "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
+    output_data.to_csv(f"Final Data{datetime.now()}.csv")
+
+    return output_data
 
 # TODO: Cheapest combination for highest supplier
-# TODO: Add Refinement, Extra and Finishing Weight for litho and sf_digital
-# TODO: Calculate Shipping Costs
 # TODO: Calculate OverPrinting for Deskpad
 # TODO: Recalculate Ganging
 
 
 if __name__ == "__main__":
-    for file in files:
-        print(file)
-        main(file)
-        print(f"{file} done")
+    files = glob.glob("./*tp*combinations.csv")
+    if len(loading_options()) > 0:
+        files = loading_options()
+    print(files)
+    output = main(files)

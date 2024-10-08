@@ -7,10 +7,31 @@ Combinations to include:
 
 
 
+# Normal Priting Quantity (Sheets)
+#=IF([@Category]="litho",IF([@[Placements_45.5 x 64]]=1,MAX(100,[@Quantity]*[@pagesNum]/[@[Placements_45.5 x 64]]/IF([@PagesIsSheets]=1,1,2)),[@Quantity]*[@pagesNum]/[@[Placements_45.5 x 64]]/IF([@PagesIsSheets]=1,1,2)),0)
+
 
 Ganging Calculation:
 
-1 - Ganging Quantity => pagesNumber * Quantity / 1 (if pagesIsSheet) else 2
+1 - Ganging Quantity => pagesNumber * Quantity / 1 (if pagesIsSheet) else 2  # =[@pagesNum]*[@Quantity]/IF([@PagesIsSheets]=1,1,2)
+
+
+
+
 2 - Ganging Utilization => for each litho size => Ganging Quantity / Placement{Size} * Paper Utilization for the size (Almost 0.5)
+
+# =IF([@Category]="litho",[@PrintingQty]/([@[Placements_45.5 x 64]]*LITHO UTILIZATION,0)
+
 3 - Check if ganging is possible for each size => Placements{size} > Min Ganging Placements (2)  AND Quantity / Placements{Size} > Ganging Max sheets (10000)
+
+# =IF(AND([@GangingQuantity]=1,[@GangingMinPlacements]<=[@[Placements_45.5 x 64]],[@pagesNum]*[@Quantity]/[@[Placements_45.5 x 64]]<=[@GangingMaxSheets]),1,0)
+
+
+
+
 4- If ganging is possible do the normal litho calculation based on the ganging quantity and placements
+
+=IF(AND([@Category]="litho",[@[GangingPossible_45.5 x 64]]=1),IFERROR(VLOOKUP(CA$3&"_"&[@colors]&"_"&[@paper]&"_"&[@PrintingQty],PrintingPrices,8,FALSE)/ROUNDDOWN([@[Placements_45.5 x 64]]*VLOOKUP(CA$3&"_"&[@paper],LithoUtilisation,4,FALSE),0),""),0)
+
+
+Ganging Quantity: 
