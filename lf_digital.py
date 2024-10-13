@@ -4,6 +4,7 @@ from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_m
 
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
+    df = df.reset_index(drop=True)
     lf_printing_rates = get_lf_mahcines()[["Supplier", "Machine", "colors", "Printing Rate"]]
     df = df.merge(lf_printing_rates, "left", on="colors")
     # df[["Supplier", "Printing Rate", "Machine"]] = lf_printing_rates[["Supplier", "Printing Rate", "Machine"]]
@@ -56,4 +57,5 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Option Markup"]/100)
     df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Shipping Costs"]
 
+    df = df.reset_index(drop=True)
     return df

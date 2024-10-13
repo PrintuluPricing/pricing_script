@@ -53,6 +53,7 @@ def get_closest_quantities(quantity):
 
 
 def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.reset_index(drop=True)
     df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
     df["Wiro Thickness"] = df["Thickness"].apply(get_closest_wiro_thickness).astype(str).str.replace("\.0","")
     df["Pur Thickness"] = df["Thickness"].apply(get_closest_pur_thickness).astype(str).str.replace("\.0","")
@@ -82,6 +83,7 @@ def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
     df["Hangers Costs"] = hangers_prices["Hangers Costs"].fillna(0)
     del (hangers_prices)
     df["Binding Prices"] = df["Wiro Costs"] + df["Hangers Costs"] + df["Pur Costs"]
+    df = df.reset_index(drop=True)
     return df
 
 

@@ -1,0 +1,15 @@
+SectionMultiple_45.5 x 64 # =IF(AND([@Category]="litho",[@[book_binding]]<>"binding_none"),VLOOKUP([@pagesNum],'Multiple Set-ups'!$B$7:$AE$131,23+VLOOKUP([@format],SectionsColumnLookup,3,FALSE),FALSE),1)*2
+
+from Multiple Setup Lookup Column: (23 + 4) -> 0.75
+
+
+
+SectionMultiple_64 x 91.5 # =IF(AND([@Category]="litho",[@[book_binding]]<>"binding_none"),VLOOKUP([@pagesNum],'Multiple Set-ups'!$B$7:$AE$131,23+VLOOKUP([@format],SectionsColumnLookup,3,FALSE),FALSE),1)
+
+
+Litho Costs multiplied by Section Multiple
+
+
+
+### Section Adjustment
+# =IF(AND(AllProductCombinations[@[Category]:[Category]]="litho",AllProductCombinations[@[book_binding]:[book_binding]]<>"binding_none"),IF(AllProductCombinations[@[pagesNum]:[pagesNum]]/[@[Placements_45.5 x 64]]/2>=1.25,1,0),0)

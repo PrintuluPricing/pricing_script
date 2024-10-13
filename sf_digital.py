@@ -5,6 +5,7 @@ from helper_pricing import get_additional, get_clicks, get_weights, get_paper_co
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print("SF Digital calculation started   :", len(df))
+    df = df.reset_index(drop=True)
     if len(df) == 0:
         return df
     df["Overs"] = np.where(df["Back_colour"] > 0, 4, 2)
@@ -49,6 +50,5 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
     # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Updated Later
     print("SF Digital calculation ended   :", len(df))
-    df.to_csv("SF Digital Extraction.csv")
-
+    df = df.reset_index(drop=True)
     return df

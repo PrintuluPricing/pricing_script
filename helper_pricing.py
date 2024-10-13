@@ -9,15 +9,15 @@ service_acc = gspread.service_account(key)
 
 # variables
 categories_space = {
-    "Litho": {"width": 15, "height": 5},
-    "SF Digital": {"width": 1, "height": 1},
-    "LF Digital": {"width": 5, "height": 5},
+    "Litho": {"width": 1.5, "height": 0.5},
+    "SF Digital": {"width": 0.1, "height": 0.1},
+    "LF Digital": {"width": 0.5, "height": 0.5},
 }
 
 INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
 placements = {}
-BLEED = 3
+BLEED = 0.3
 
 cached_data = {}
 
@@ -29,10 +29,12 @@ def get_placements(format: str, size: str, category: str) -> int | float:
     if category == "LF Digital":
         return (100 / x * 100 / y)
     [height, width] = get_dimensions(size)
-    height -= categories_space[category]["height"]
-    width -= categories_space[category]["width"]
-    placements1 = int(height/x * width / y)
-    placements2 = int(height/y * width / x)
+    # height -= categories_space[category]["height"]
+    # width -= categories_space[category]["width"]
+    height -= categories_space[category]["width"]
+    width -= categories_space[category]["height"]
+    placements1 = int(height/x) * int(width / y)
+    placements2 = int(height/y) * int(width / x)
     placement = max(placements1, placements2)
     placements[format] = {size: placement}
     return placement
@@ -67,13 +69,13 @@ def get_nth_value(x: str, delim: str, n: int) -> str:
 
 
 def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFrame:
+    df = df.reset_index(drop=True)
     print("Calculating Attributes: ", len(df))
     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
     finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
     finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
     # Extra Costs
     extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
-    print("Extra Costs ", len(extra_costs))
     extra_costs["Extra_costs"] = extra_costs["Setup-Cost"] + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
     # Binding Costs # TODO: Check Later how to calculate Wiro Biniding
@@ -89,16 +91,19 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Finishing_costs"] = finishing_costs["Finishing_costs"]
     df["Binding_costs"] = binding_costs["Binding_costs"]
     df["Extra_costs"] = extra_costs["Extra_costs"]
-    print(extra_costs[extra_costs["Extra_costs"].isna()])
     print(len(df))
 
+    print(extra_costs["Extra_costs"].value_counts())
     print(df["Extra_costs"].value_counts())
-    print(df["Finishing_costs"].value_counts())
-    print(df["Binding_costs"].value_counts())
+    print(df.index)
+    print(finishing_costs["Finishing_costs"].value_counts())
+    print(binding_costs["Binding_costs"].value_counts())
+
     del (finishing_costs)
     del (binding_costs)
     del (extra_costs)
 
+    df = df.reset_index(drop=True)
     df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
     df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
     df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
@@ -110,6 +115,7 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Total Costs"] = df["Printing and Paper incl Markup"] + df["Shipping Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
 
     print("Finished Attributes: ", len(df))
+    df = df.reset_index(drop=True)
     return df
 
 def get_finishing_costs()-> pd.DataFrame:
@@ -360,4 +366,9 @@ def get_weights() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    place = get_placements("A5 (29.7 x 21 cm)","45.5 x 64", "Litho")
+    place2 = get_placements("A5 (29.7 x 21 cm)","64 x 91.5", "Litho")
+    print(place)
+    print(place2)
+
     pass

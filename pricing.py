@@ -37,24 +37,27 @@ def main(files: list[str]) -> pd.DataFrame:
 
     start = datetime.now()
     data[cat_columns] = data[cat_columns].astype('category')
-    data[num_columns] = data[num_columns].astype('int8')
+    data[num_columns] = data[num_columns].astype('uint8')
     data["Quantity"] = data["Quantity"].astype('int32')
     print(f"Casting took {datetime.now() - start}")
     products = list(set(list(data["Product"])))
     data = data.rename({"Product": "productpart"}, axis=1)
 
     print(len(data))
+    data = data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    print(len(data))
     categories = list(set(list(data["Category"])))
     data["file_type"] = "#"
     data["file_type"] = data["file_type"].astype('category')
     data["PagesNumber"] = data["pages"].str.extract(r"(\d+)")
-    data["PagesNumber"] = pd.to_numeric(data["PagesNumber"], errors="coerce").astype('int16')
+    data["PagesNumber"] = pd.to_numeric(data["PagesNumber"], errors="coerce").astype('uint16')
     data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(
         get_dimensions).to_list()
-    data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('int16')
+    data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('uint16')
     data["Length"] = data["Height (cm)"] * 10
-    data["Length"] = data["Length"].astype('int16')
+    data["Length"] = data["Length"].astype('uint16')
     data["SQM"] = data["Format"].apply(get_SQM)
+    data["Format"] = data["Format"].astype("category")
 
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
@@ -67,8 +70,10 @@ def main(files: list[str]) -> pd.DataFrame:
         # Splitting by category
         # Split Litho and SF Digital
 
-        litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"]
+        litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"].reset_index(drop=True)
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
+        litho_data = litho_data.reset_index(drop=True)
+        sf_digital_data = sf_digital_data.reset_index(drop=True)
         litho_data = litho.calculation(litho_data)
         litho_data = calculate_attributes(litho_data, finishing)
         litho_data = calculate_binding(litho_data)
@@ -84,7 +89,6 @@ def main(files: list[str]) -> pd.DataFrame:
         if len(sf_digital_data) > 0:
             dfs.append(sf_digital_data)
             del sf_digital_data
-            exit()
 
     if "LF Digital" in categories:
         #NOTE:  LF Digital Calculation
@@ -96,16 +100,20 @@ def main(files: list[str]) -> pd.DataFrame:
 
     print("Collecting Data")
     output_data = pd.concat(dfs)
-    print("Reached")
+    output_data = output_data.reset_index(drop=True)
+    print("Collected All")
     del dfs
-    print(output_data.columns)
     output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {datetime.now()}.csv")
     output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {datetime.now()} no_prices.csv")
     output_data = output_data[output_data["Total Costs"].isna() == False]
+    print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)
-    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier"])
+    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=True)
-    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options"])
+    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    print(len(output_data))
+    output_data = output_data.reset_index(drop=True)
     output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {datetime.now()}.csv")
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
     output_data["price"] = 1

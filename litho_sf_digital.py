@@ -44,15 +44,14 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     # NOTE: Check whether to select sheetwise vs other workstyle and which to take by default
     df["Workstyle"] = np.where(df["colors"].str[-1] == "0","Simplex","Sheetwise")
     df["Workstyle"] = df["Workstyle"].astype('category')
-    df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype('int8')
-    df["Back_colour"] = df["colors"].str[-1].astype('int8')
+    df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype('uint8')
+    df["Back_colour"] = df["colors"].str[-1].astype('uint8')
     # Calculating Placements
-    df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1).astype('int16')
+    df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1).astype('uint16')
     df = df[df["Placements"] > 0]
-    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]).astype('int16')
+    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]).astype('uint16')
     paper_prices = get_paper_costs()
     df = pd.merge(df, paper_prices, "left", on=["Paper", "Sheet Size"])
     del paper_prices
     print(df.dtypes)
-    print(df["Quantity"].value_counts())
     return df
