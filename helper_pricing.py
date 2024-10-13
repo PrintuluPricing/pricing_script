@@ -93,12 +93,6 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Extra_costs"] = extra_costs["Extra_costs"]
     print(len(df))
 
-    print(extra_costs["Extra_costs"].value_counts())
-    print(df["Extra_costs"].value_counts())
-    print(df.index)
-    print(finishing_costs["Finishing_costs"].value_counts())
-    print(binding_costs["Binding_costs"].value_counts())
-
     del (finishing_costs)
     del (binding_costs)
     del (extra_costs)
@@ -155,7 +149,6 @@ def get_paper_costs()-> pd.DataFrame:
     if "paper" in cached_data.keys():
         return cached_data["paper"]
     paper_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Paper Price")
-    print(paper_prices.columns)
     paper_prices = paper_prices[["Grammage", "Sheet Size", "Price incl 5%"]]
     paper_prices = paper_prices.rename({"Grammage": "Paper", "Price incl 5%": "Paper Costs"}, axis=1)
     paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
