@@ -366,9 +366,6 @@ def get_weights() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    place = get_placements("A5 (29.7 x 21 cm)","45.5 x 64", "Litho")
-    place2 = get_placements("A5 (29.7 x 21 cm)","64 x 91.5", "Litho")
+    place = get_placements("42 x 59.4","64x 91.5", "Litho")
     print(place)
-    print(place2)
-
     pass

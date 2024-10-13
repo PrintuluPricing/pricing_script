@@ -23,8 +23,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_material = get_lf_material()
     lf_material = df.merge(lf_material, "left", on=["Paper", "Supplier"])
     df["LF Material"] = lf_material["LF Material"]
-    del lf_material
     df["GSM"] = lf_material["GSM"]
+    del lf_material
     df["LF Material"] = df["LF Material"] * df["SQM"] * df["LF Double"] * (df["Waste %"] + 1)
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["LF Material"]
     lf_extra = get_lf_extra()

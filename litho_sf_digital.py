@@ -53,5 +53,4 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     paper_prices = get_paper_costs()
     df = pd.merge(df, paper_prices, "left", on=["Paper", "Sheet Size"])
     del paper_prices
-    print(df.dtypes)
     return df

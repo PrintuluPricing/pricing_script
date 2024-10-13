@@ -8,6 +8,7 @@ import litho_sf_digital
 import litho
 import sf_digital
 import lf_digital
+import gifts
 from datetime import datetime
 
 warnings.simplefilter(action="ignore")
@@ -23,7 +24,11 @@ def loading_options() -> list[str]:
 
 
 def main(files: list[str]) -> pd.DataFrame:
-    data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra']
+    timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
+    print(timestamp)
+    print(files)
+    data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
+
 
 
     columns = ["price", "productpart", "paper", "format", "pages", "Quantity",
@@ -33,12 +38,12 @@ def main(files: list[str]) -> pd.DataFrame:
     cat_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options',
                   'SuperCategory', 'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Sheets', 'Extra']
 
-    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup',]# 'Quantity']
+    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'GangingQuantity']# 'Quantity']
 
     start = datetime.now()
     data[cat_columns] = data[cat_columns].astype('category')
     data[num_columns] = data[num_columns].astype('uint8')
-    data["Quantity"] = data["Quantity"].astype('int32')
+    data["Quantity"] = data["Quantity"].astype('uint32')
     print(f"Casting took {datetime.now() - start}")
     products = list(set(list(data["Product"])))
     data = data.rename({"Product": "productpart"}, axis=1)
@@ -61,14 +66,13 @@ def main(files: list[str]) -> pd.DataFrame:
 
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
+    gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
     finishing = get_finishing_costs()
     del data
 
     dfs = []
     if "Litho" in categories or "SF Digital" in categories:
         litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
-        # Splitting by category
-        # Split Litho and SF Digital
 
         litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"].reset_index(drop=True)
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
@@ -91,20 +95,28 @@ def main(files: list[str]) -> pd.DataFrame:
             del sf_digital_data
 
     if "LF Digital" in categories:
-        #NOTE:  LF Digital Calculation
-        lf_digital_data["SQM"] = lf_digital_data["Quantity"]/(10_000  / (lf_digital_data["SQM"] *10_000))
-        #NOTE: Calculate printing Costs
+        lf_digital_data["SQM"] = lf_digital_data["Quantity"]/(10_000 /(lf_digital_data["SQM"] *10_000))
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         if len(lf_digital_data) > 0:
             dfs.append(lf_digital_data)
 
+    if "Gift" in categories or "Gifts" in categories:
+        gifts_data = gifts.calculation(gifts_data)
+        if len(gifts_data) > 0:
+            dfs.append(gifts_data)
+
     print("Collecting Data")
-    output_data = pd.concat(dfs)
+    if len(dfs) == 0:
+        print(files, " No Data")
+    try:
+        output_data = pd.concat(dfs)
+    except:
+        return
     output_data = output_data.reset_index(drop=True)
     print("Collected All")
     del dfs
-    output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {datetime.now()}.csv")
-    output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {datetime.now()} no_prices.csv")
+    output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv")
+    output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv")
     output_data = output_data[output_data["Total Costs"].isna() == False]
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)
@@ -114,14 +126,14 @@ def main(files: list[str]) -> pd.DataFrame:
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
-    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {datetime.now()}.csv")
+    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv")
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
     output_data["price"] = 1
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(columns)
     output_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="sum", index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
-    output_data.to_csv(f"Final Data{datetime.now()}.csv")
+    output_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
 
     return output_data
 
@@ -135,4 +147,6 @@ if __name__ == "__main__":
     if len(loading_options()) > 0:
         files = loading_options()
     print(files)
-    output = main(files)
+    for file in files:
+        main([file])
+    # output = main(files)
