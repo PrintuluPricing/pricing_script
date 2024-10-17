@@ -29,7 +29,7 @@ def main(files: list[str]) -> pd.DataFrame:
     print(files)
     data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
-
+    file_name = files[0].replace("/", "_")
 
     columns = ["price", "productpart", "paper", "format", "pages", "Quantity",
                "colors", "book_binding", "refinement", "finishing", "options", "file_type"]
@@ -41,6 +41,10 @@ def main(files: list[str]) -> pd.DataFrame:
     num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'GangingQuantity']# 'Quantity']
 
     start = datetime.now()
+    with open(f"log_{file_name}_{timestamp}.txt", "w+") as f:
+        f.write(f"Started | {file_name} | {timestamp} ")
+
+
     data[cat_columns] = data[cat_columns].astype('category')
     data[num_columns] = data[num_columns].astype('uint8')
     data["Quantity"] = data["Quantity"].astype('uint32')
@@ -49,18 +53,22 @@ def main(files: list[str]) -> pd.DataFrame:
     data = data.rename({"Product": "productpart"}, axis=1)
 
     print(len(data))
-    data = data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    print(len(data))
+    data = data.drop_duplicates(["Category","productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    unique_combinations = len(data)
+
+    with open(f"log_{file_name}_{timestamp}.txt", "a") as f:
+        f.write(f"{file_name} | {unique_combinations} - unique records")
+    print(unique_combinations)
     categories = list(set(list(data["Category"])))
     data["file_type"] = "#"
     data["file_type"] = data["file_type"].astype('category')
     data["PagesNumber"] = data["pages"].str.extract(r"(\d+)")
-    data["PagesNumber"] = pd.to_numeric(data["PagesNumber"], errors="coerce").astype('uint16')
+    data["PagesNumber"] = pd.to_numeric(data["PagesNumber"], errors="coerce").astype('uint16', errors="ignore")
     data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(
         get_dimensions).to_list()
-    data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('uint16')
+    data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('float16')
     data["Length"] = data["Height (cm)"] * 10
-    data["Length"] = data["Length"].astype('uint16')
+    data["Length"] = data["Length"].astype('float16')
     data["SQM"] = data["Format"].apply(get_SQM)
     data["Format"] = data["Format"].astype("category")
 
@@ -78,21 +86,26 @@ def main(files: list[str]) -> pd.DataFrame:
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
         litho_data = litho_data.reset_index(drop=True)
         sf_digital_data = sf_digital_data.reset_index(drop=True)
-        litho_data = litho.calculation(litho_data)
-        litho_data = calculate_attributes(litho_data, finishing)
-        litho_data = calculate_binding(litho_data)
 
         if len(litho_data) > 0:
-            dfs.append(litho_data)
-            del litho_data
-        # SF Digital Calculation
-        sf_digital_data = sf_digital.calculation(sf_digital_data)
-        sf_digital_data = calculate_attributes(sf_digital_data, finishing)
-        sf_digital_data = calculate_binding(sf_digital_data)
+            litho_data = litho.calculation(litho_data)
+            litho_data = calculate_binding(litho_data)
+            litho_data = calculate_attributes(litho_data, finishing)
 
+            if len(litho_data) > 0:
+                dfs.append(litho_data)
+                del litho_data
+
+
+        # SF Digital Calculation
         if len(sf_digital_data) > 0:
-            dfs.append(sf_digital_data)
-            del sf_digital_data
+            sf_digital_data = sf_digital.calculation(sf_digital_data)
+            sf_digital_data = calculate_binding(sf_digital_data)
+            sf_digital_data = calculate_attributes(sf_digital_data, finishing)
+
+            if len(sf_digital_data) > 0:
+                dfs.append(sf_digital_data)
+                del sf_digital_data
 
     if "LF Digital" in categories:
         lf_digital_data["SQM"] = lf_digital_data["Quantity"]/(10_000 /(lf_digital_data["SQM"] *10_000))
@@ -124,6 +137,8 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=True)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    with open(f"log_{file_name}_{timestamp}.txt", "a") as f:
+        f.write(f"Finished | {file_name} | {len(output_data)} - unique records")
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
     output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv")

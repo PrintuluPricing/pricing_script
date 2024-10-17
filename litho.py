@@ -6,7 +6,6 @@ from helper_pricing import get_additional, get_litho_machines, get_litho_utiliza
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     # FIXME: Update Later
     # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
-
     df = df.reset_index(drop=True)
     print("Litho Calculation Started  :", len(df))
 
@@ -15,18 +14,23 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["pages factor"] = np.where(df["pages"].str.contains("page"),2,1)
     df["pages factor"] = df["pages factor"].astype('uint8')
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
+    df["Multiple"] = df["Multiple"].astype("float16")
 
     df["Ganging"] = True # NOTE: To update later based on conditions
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
     df["Plates"] = np.where(df["OverPrintB"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
     df["Plates"] = np.where(df["OverPrintFC"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
+    df["Plates"] = df["Plates"].astype("uint8")
     df["Overs"] = df["Plates"] * 50
+    df["Overs"] = df["Overs"].astype("uint16")
 
     litho_utilization = get_litho_utilization()
     df = df.merge(litho_utilization, "left", on=["Paper", "Sheet Size"])
     litho_machines = get_litho_machines()
     df = pd.merge(df,litho_machines,"left",on="Machine_size")
     df = df[df["Plates Costs"].isna() == False]
+    df[["Sheet Size", "Paper", "Machine_size"]]
+    df.dtypes.to_csv("Dtypes Litho Machines Merge.csv")
 
     additional_prices, markup = get_additional()
     litho_additional = additional_prices[additional_prices["Attribute"].str.contains("Litho")].reset_index(drop=True)
@@ -34,6 +38,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     litho_additional = litho_additional.rename({"value": "Additional"}, axis=1)
     litho_additional = litho_additional.drop("Attribute", axis=1)
     df = pd.merge(df, litho_additional, "left", on=["Supplier", "Machine_size"])
+    df.dtypes.to_csv("Dtypes Litho Util Merge.csv")
     del litho_additional
 
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
@@ -53,9 +58,9 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     # 12 / :q
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["Multiple"])
-    df["Total Sheets"] = df["printing_sheets"] + df["Overs"] * df["Multiple"]
     df["Multiple"] = np.where((df["Multiple"] > 1) & df["pages factor"] == 1, 1,
-                              np.ceil(df["Multiple"]))
+                              np.ceil(df["Multiple"])).astype("uint8")
+    df["Total Sheets"] = df["printing_sheets"] + df["Overs"] * df["Multiple"]
     #NOTE: Normal Calculation
 
     df = df[df["Plates Costs"].isna() == False]
@@ -84,16 +89,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 # Number of Schemes: pagesNum / placements / pages_factor
 # Overs: 1 * Overs + (n_schemes - 1) * 50
 # Plates: Plates + (n_schemes -1) * 1
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# Weight Calculation
 
     weights = get_weights()
     refinement_weights = weights[weights["Type"] == "Refinement"]  # .reset_index(drop=True)
@@ -121,6 +116,14 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Update Correct Values Later
 
+    df = df.sort_values("Printing and Paper incl Markup", ascending=False)
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    df = df.sort_values("Printing and Paper incl Markup", ascending=True)
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+
+
+    print(df.dtypes)
+    df.dtypes.to_csv("Litho data types.csv")
     print("Litho Calculation Ended  :", len(df))
     df = df.reset_index(drop=True)
     return df

@@ -82,7 +82,8 @@ def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
     hangers_prices["Hangers Costs"] = hangers_prices["Setup"] + hangers_prices["value"] * hangers_prices["Quantity_x"]
     df["Hangers Costs"] = hangers_prices["Hangers Costs"].fillna(0)
     del (hangers_prices)
-    df["Binding Prices"] = df["Wiro Costs"] + df["Hangers Costs"] + df["Pur Costs"]
+    df["Binding_costs"] = df["Wiro Costs"] + df["Hangers Costs"] + df["Pur Costs"]
+    df["Binding_costs"] = df["Binding_costs"].fillna(0)
     df = df.reset_index(drop=True)
     return df
 

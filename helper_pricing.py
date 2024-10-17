@@ -72,15 +72,15 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df = df.reset_index(drop=True)
     print("Calculating Attributes: ", len(df))
     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
-    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"] + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
+    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"].fillna(0) + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
     finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
     # Extra Costs
     extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
-    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"] + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
+    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
     # Binding Costs # TODO: Check Later how to calculate Wiro Biniding
     binding_costs = pd.merge(df[["Supplier", "Quantity", "Binding", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Binding"], right_on=["Supplier", "Attribute"])
-    binding_costs["Binding_costs"] = binding_costs["Setup-Cost"] + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
+    binding_costs["Binding_costs"] = binding_costs["Setup-Cost"].fillna(0) + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
     binding_costs["Binding_costs"] = np.where(binding_costs["Binding"] == "None", 0, binding_costs["Binding_costs"])
     # Refinement Costs
     refinement = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Refinement")
@@ -89,7 +89,7 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     refinement["Refinement_costs"] = pd.to_numeric(refinement["Refinement_costs"], errors="coerce")
 
     df["Finishing_costs"] = finishing_costs["Finishing_costs"]
-    df["Binding_costs"] = binding_costs["Binding_costs"]
+    df["Binding_costs"] = df["Binding_costs"] + binding_costs["Binding_costs"].fillna(0)
     df["Extra_costs"] = extra_costs["Extra_costs"]
     print(len(df))
 
@@ -107,6 +107,13 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
 
     df["Total Costs"] = df["Printing and Paper incl Markup"] + df["Shipping Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
+    df = df[df["Total Costs"].isna() == False]
+    df = df.sort_values("Total Costs", ascending=False)
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    print(len(df))
+    df = df.sort_values("Total Costs", ascending=True)
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    df = df.reset_index(drop=True)
 
     print("Finished Attributes: ", len(df))
     df = df.reset_index(drop=True)
@@ -119,13 +126,16 @@ def get_finishing_costs()-> pd.DataFrame:
     finishing = pd.melt(finishing , id_vars=["Attribute", "Calculation"], var_name="Supplier")
     finishing = finishing [finishing["value"] != ""]
     finishing["Setup-Cost"] = finishing ["value"].str.extract("(.*)\+")
-    finishing["Setup-Cost"] = pd.to_numeric(finishing ["Setup-Cost"],errors="coerce")
+    finishing["Setup-Cost"] = pd.to_numeric(finishing["Setup-Cost"],errors="coerce")
+    finishing["Setup-Cost"] = finishing["Setup-Cost"].fillna(0).astype("float32")
     finishing["value"] = finishing["value"].str.replace(".*\+","",regex=True)
     finishing["/1000"] = finishing["value"].str.extract("(/\s?1000)")
     finishing["/1000"] = finishing["value"].str.contains("(/\s?1000)")
     finishing["value"] = finishing["value"].str.replace("(/\s?1000)","",regex=True)
     finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
     finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
+    finishing["value"] = finishing["value"].astype("float32")
+    finishing[["Attribute", "Calculation", "Supplier"]] = finishing[["Attribute", "Calculation", "Supplier"]].astype("category")
     cached_data["finishing"] = finishing
     return finishing
 
@@ -179,6 +189,8 @@ def get_litho_machines() -> pd.DataFrame:
     litho_machines["value"] = litho_machines["value"].astype(float)
     litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
     litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
+    litho_machines[["Supplier", "Machine_size"]] = litho_machines[["Supplier", "Machine_size"]].astype("category")
+    litho_machines[["Cost", "Plates Costs", "Setup Time", "Sheets / Hour"]] = litho_machines[["Cost", "Plates Costs", "Setup Time", "Sheets / Hour"]].astype('float16')
     cached_data["litho_machines"] = litho_machines
     return litho_machines
 
@@ -192,6 +204,8 @@ def get_lf_mahcines() -> pd.DataFrame:
     lf_machines = lf_machines[lf_machines["value"] != ""]
     lf_machines["value"] = lf_machines["value"].astype(float)
     lf_machines = lf_machines.rename({"Color": "colors", "value": "Printing Rate"}, axis=1)
+    lf_machines[["Supplier", "colors", "Machine"]] = lf_machines[["Supplier", "colors", "Machine"]].astype("category")
+    lf_machines["Printing Rate"] = lf_machines["Printing Rate"].astype("float16")
     cached_data["lf_machines"] = lf_machines
     return lf_machines
 
@@ -204,6 +218,8 @@ def get_lf_waste() -> pd.DataFrame:
     lf_waste = lf_waste[lf_waste["value"] != ""]
     lf_waste["value"] = pd.to_numeric(lf_waste["value"])
     lf_waste = lf_waste.rename({"value": "Waste %", "Attribute": "Paper"}, axis=1)
+    lf_waste[["Supplier", "Paper"]] = lf_waste[["Supplier", "Paper"]].astype("category")
+    lf_waste["Waste %"] = lf_waste["Waste %"].astype('float16')
     cached_data["lf_waste"] = lf_waste
     return lf_waste
 
@@ -224,6 +240,8 @@ def get_lf_cutting() -> pd.DataFrame:
     lf_cutting = lf_cutting[lf_cutting["value"] != ""]
     lf_cutting["value"] = pd.to_numeric(lf_cutting["value"])
     lf_cutting = lf_cutting.rename({"value": "LF Cutting", "Attribute": "Paper"}, axis=1)
+    lf_cutting[["Supplier", "Paper"]] = lf_cutting[["Supplier", "Paper"]].astype("category")
+    lf_cutting["LF Cutting"] = lf_cutting["LF Cutting"].astype("float16")
     cached_data["lf_cutting"] = lf_cutting
     return lf_cutting
 
@@ -234,9 +252,10 @@ def get_lf_material() -> pd.DataFrame:
     lf_material = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "LF Material")
     lf_material = pd.melt(lf_material, ["Attribute","GSM"], var_name="Supplier")
     lf_material = lf_material[lf_material["value"] != ""]
-    lf_material["value"] = pd.to_numeric(lf_material["value"])
-    lf_material["GSM"] = pd.to_numeric(lf_material["GSM"])
+    lf_material["value"] = pd.to_numeric(lf_material["value"]).astype("float16")
+    lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
     lf_material = lf_material.rename({"value": "LF Material", "Attribute": "Paper"}, axis=1)
+    lf_material[["Supplier", "Paper"]] = lf_material[["Supplier", "Paper"]].astype("category")
     cached_data["lf_material"] = lf_material
     return lf_material
 
@@ -247,8 +266,9 @@ def get_lf_extra() -> pd.DataFrame:
     lf_extra = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "LF Extra")
     lf_extra = pd.melt(lf_extra, "Attribute", var_name="Supplier")
     lf_extra = lf_extra[lf_extra["value"] != ""]
-    lf_extra["value"] = pd.to_numeric(lf_extra["value"])
+    lf_extra["value"] = pd.to_numeric(lf_extra["value"]).astype("float16")
     lf_extra = lf_extra.rename({"value": "LF Extra", "Attribute": "Extra"}, axis=1)
+    lf_extra[["Supplier", "Extra"]] = lf_extra[["Supplier", "Extra"]].astype("category")
     cached_data["lf_extra"] = lf_extra
     return lf_extra
 
@@ -294,7 +314,8 @@ def get_litho_utilization()-> pd.DataFrame:
     if "litho_utilization" in cached_data.keys():
         return cached_data["litho_utilization"]
     litho_utilization = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Litho Utilization")
-    litho_utilization["Ganging Utilization"] = pd.to_numeric(litho_utilization["Ganging Utilization"], errors="coerce")
+    litho_utilization["Ganging Utilization"] = pd.to_numeric(litho_utilization["Ganging Utilization"], errors="coerce").astype("float16")
+    litho_utilization[["Sheet Size", "Paper", "Paper Code"]] = litho_utilization[["Sheet Size", "Paper", "Paper Code"]].astype("category")
     cached_data["litho_utilization"] = litho_utilization
     return litho_utilization
 
@@ -353,12 +374,11 @@ def get_weights() -> pd.DataFrame:
         return cached_data["weights"]
     weights = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "GSM")
     weights = weights[weights["GSM"] != ""].reset_index(drop=True)
-    weights["GSM"] = pd.to_numeric(weights["GSM"])
+    weights["GSM"] = pd.to_numeric(weights["GSM"]).astype("float16")
+    weights[["Attribute", "Type"]] = weights[["Attribute", "Type"]].astype("category")
     cached_data["weights"] = weights
     return weights
 
 
 if __name__ == "__main__":
-    place = get_placements("42 x 59.4","64x 91.5", "Litho")
-    print(place)
     pass
