@@ -5,3 +5,4 @@
 .fuse*
 .~*
 __pycache__
+log*txt

@@ -7,6 +7,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     # FIXME: Update Later
     # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
     df = df.reset_index(drop=True)
+    print(df.columns)
     print("Litho Calculation Started  :", len(df))
 
     df["OverPrintB"] = df["Extra"].str.contains("Black Changes")
@@ -15,6 +16,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["pages factor"] = df["pages factor"].astype('uint8')
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
     df["Multiple"] = df["Multiple"].astype("float16")
+    df["Original Multiple"] = df["Multiple"].astype("float16")
 
     df["Ganging"] = True # NOTE: To update later based on conditions
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
@@ -70,8 +72,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
     df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
     # FIX: Check Setup Cost for Simplex / Sheetwise and Work and Turn
-    df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Multiple"]
-    df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
+    df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
+    df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"] * df["Original Multiple"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
     df["Printing and Paper Costs"] = df["Litho Costs"] + df["Paper Costs"]
     df["Printing and Paper incl Markup"] = np.where(df["GangingQuantity"] == 1, np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
