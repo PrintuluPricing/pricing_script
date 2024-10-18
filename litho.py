@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from helper_pricing import get_additional, get_litho_machines, get_litho_utilization, get_weights, get_shipping_costs
 
+SHIPPING_MARKUP = 35
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     # FIXME: Update Later
@@ -16,9 +17,9 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["pages factor"] = df["pages factor"].astype('uint8')
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
     df["Multiple"] = df["Multiple"].astype("float16")
-    df["Original Multiple"] = df["Multiple"].astype("float16")
+    df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"),1)
 
-    df["Ganging"] = True # NOTE: To update later based on conditions
+    df["Ganging"] = df["GangingQuantity"] == 1
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
     df["Plates"] = np.where(df["OverPrintB"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
     df["Plates"] = np.where(df["OverPrintFC"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
@@ -40,7 +41,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     litho_additional = litho_additional.rename({"value": "Additional"}, axis=1)
     litho_additional = litho_additional.drop("Attribute", axis=1)
     df = pd.merge(df, litho_additional, "left", on=["Supplier", "Machine_size"])
-    df.dtypes.to_csv("Dtypes Litho Util Merge.csv")
     del litho_additional
 
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
@@ -62,23 +62,28 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["Multiple"])
     df["Multiple"] = np.where((df["Multiple"] > 1) & df["pages factor"] == 1, 1,
                               np.ceil(df["Multiple"])).astype("uint8")
+    # df["Original Multiple"] = np.ceil(df["Original Multiple"])
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"] * df["Multiple"]
     #NOTE: Normal Calculation
 
     df = df[df["Plates Costs"].isna() == False]
     df = df.reset_index(drop=True)
-    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60
+    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60 * df["Original Multiple"]
     df["Setup Time(hour)"] = df["Setup Time(hour)"] * np.where((df["OverPrintB"]) | (df["OverPrintFC"]), df["Multiple"], 1 )
     df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
     df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
     # FIX: Check Setup Cost for Simplex / Sheetwise and Work and Turn
     df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
-    df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"] * df["Original Multiple"]
+    df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
     df["Printing and Paper Costs"] = df["Litho Costs"] + df["Paper Costs"]
-    df["Printing and Paper incl Markup"] = np.where(df["GangingQuantity"] == 1, np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
+    df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
+
+    df["Additional"] = df["Additional"] * df["Original Multiple"]
 
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
+    df["Printing and Paper incl Markup"] = np.where(df["colors"] == "colour_00", 0, df["Printing and Paper incl Markup"])
+
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 
 # NOTE: Mutliple Sheets -> Cannot exceed the quantity
@@ -101,9 +106,9 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     extra_weights = df[["Extra"]].merge(extra_weights, "left", left_on="Extra", right_on="Attribute")
     df["Extra GSM"] = extra_weights["GSM"]
     del extra_weights
-    df["Refinement GSM"] = df["Refinement GSM"].fillna(0)
-    df["Extra GSM"] = df["Extra GSM"].fillna(0)
-    df["GSM"] = df["GSM"] + df["Refinement GSM"] + df["Extra GSM"]
+    df["Refinement GSM"] = df["Refinement GSM"].fillna(0) * df["Total Sheets"]
+    df["Extra GSM"] = df["Extra GSM"].fillna(0) * df["Quantity"]
+    df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
 
     #FIX: Check Refinement, finishing and Extra weights
@@ -114,18 +119,18 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Remaining"] = np.floor(df["Total Weight"] - shipping_costs["Minimum KG"])
     df["Remaining"] = np.where(df["Remaining"] < 0, 0, df["Remaining"])
     df["Shipping Costs"] = df["Remaining"] * shipping_costs["Kg After"] + shipping_costs["Minimum"]
+    df["Shipping Costs"] = df["Shipping Costs"] * (1+ SHIPPING_MARKUP / 100)
+    df["Shipping Costs"] = df["Shipping Costs"].astype("float32")
 
 
     # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Update Correct Values Later
 
-    df = df.sort_values("Printing and Paper incl Markup", ascending=False)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    # df.to_csv("Litho Calculation.csv", index=False)
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
+    # df = df.sort_values("Printing and Paper incl Markup", ascending=False)
+    # df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
 
 
-    print(df.dtypes)
-    df.dtypes.to_csv("Litho data types.csv")
-    print("Litho Calculation Ended  :", len(df))
     df = df.reset_index(drop=True)
     return df

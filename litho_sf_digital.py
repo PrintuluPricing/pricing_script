@@ -1,11 +1,12 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_placements, get_paper_costs
+from helper_pricing import get_placements, get_paper_costs, get_SQM
 
 
 categories_sizes = {
     "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
-    "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
+    # "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
+    "SF Digital": ['32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
     "LF Digital": ["100x100"],
 }
 
@@ -38,6 +39,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Sheet Size"] = df["Sheet Size"].str.split(";")
     df = df.explode("Sheet Size")
     df["Sheet Size"] = df["Sheet Size"].astype('category')
+    df["SQM"] = df.apply(lambda x: get_SQM(x["Format"],df["Sheet Size"] , x["Category"]), axis=1).astype('float32')
     df["Machine_size"] = df["Sheet Size"].map(machine_sizes)
     df["Machine_size"] = df["Machine_size"].astype('category')
     # Litho Calculations

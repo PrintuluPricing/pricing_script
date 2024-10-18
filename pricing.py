@@ -42,7 +42,7 @@ def main(files: list[str]) -> pd.DataFrame:
 
     start = datetime.now()
     with open(f"log_{file_name}_{timestamp}.txt", "w+") as f:
-        f.write(f"Started | {file_name} | {timestamp} ")
+        f.write(f"Started | {file_name} | {timestamp} \n")
 
 
     data[cat_columns] = data[cat_columns].astype('category')
@@ -57,7 +57,7 @@ def main(files: list[str]) -> pd.DataFrame:
     unique_combinations = len(data)
 
     with open(f"log_{file_name}_{timestamp}.txt", "a") as f:
-        f.write(f"{file_name} | {unique_combinations} - unique records")
+        f.write(f"{file_name} | {unique_combinations} - unique records \n")
     print(unique_combinations)
     categories = list(set(list(data["Category"])))
     data["file_type"] = "#"
@@ -69,7 +69,7 @@ def main(files: list[str]) -> pd.DataFrame:
     data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('float16')
     data["Length"] = data["Height (cm)"] * 10
     data["Length"] = data["Length"].astype('float16')
-    data["SQM"] = data["Format"].apply(get_SQM)
+    # data["SQM"] = data["Format"].apply(get_SQM)
     data["Format"] = data["Format"].astype("category")
 
     lf_digital_data = data[data["Category"] == "LF Digital"]
@@ -108,7 +108,6 @@ def main(files: list[str]) -> pd.DataFrame:
                 del sf_digital_data
 
     if "LF Digital" in categories:
-        lf_digital_data["SQM"] = lf_digital_data["Quantity"]/(10_000 /(lf_digital_data["SQM"] *10_000))
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         if len(lf_digital_data) > 0:
             dfs.append(lf_digital_data)
@@ -128,20 +127,20 @@ def main(files: list[str]) -> pd.DataFrame:
     output_data = output_data.reset_index(drop=True)
     print("Collected All")
     del dfs
-    output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv")
-    output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv")
+    output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
+    output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
     output_data = output_data[output_data["Total Costs"].isna() == False]
     print(len(output_data))
-    output_data = output_data.sort_values("Total Costs", ascending=False)
+    output_data = output_data.sort_values("Total Costs", ascending=True)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     print(len(output_data))
-    output_data = output_data.sort_values("Total Costs", ascending=True)
+    output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     with open(f"log_{file_name}_{timestamp}.txt", "a") as f:
-        f.write(f"Finished | {file_name} | {len(output_data)} - unique records")
+        f.write(f"Finished | {file_name} | {len(output_data)} - unique records \n")
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
-    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv")
+    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
     output_data["price"] = 1
     output_data = output_data.sort_values("Total Costs", ascending=False)
@@ -152,9 +151,13 @@ def main(files: list[str]) -> pd.DataFrame:
 
     return output_data
 
-# TODO: Cheapest combination for highest supplier
-# TODO: Calculate OverPrinting for Deskpad
-# TODO: Recalculate Ganging
+# TODO: Custom Products - Custom Products Sheet
+# Pop
+# Card
+# Display
+# Advertisement
+# Promotion
+# Mask
 
 
 if __name__ == "__main__":

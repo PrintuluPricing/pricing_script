@@ -51,8 +51,12 @@ def get_dimensions(size) -> tuple[float, float]:
     return height, width
 
 
-def get_SQM(format: str) -> float:
+def get_SQM(format: str, sheet_size: str, category: str) -> float:
     height, width = get_dimensions(format)
+    if category == "LF Digital":
+        height, width = get_dimensions(format)
+        return height * width / 10_000
+    height, width = get_dimensions(sheet_size)
     return height * width / 10_000
 
 
@@ -105,14 +109,15 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
     df["Extra Costs"] = df["Extra_costs"] * (1 + df["Option Markup"] /100)
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
+    df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
 
-    df["Total Costs"] = df["Printing and Paper incl Markup"] + df["Shipping Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
+    df["Total Costs"] = df["Total Printing Costs"] + df["Shipping Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
     df = df[df["Total Costs"].isna() == False]
-    df = df.sort_values("Total Costs", ascending=False)
+    df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     print(len(df))
-    df = df.sort_values("Total Costs", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    # df = df.sort_values("Total Costs", ascending=False)
+    # df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     df = df.reset_index(drop=True)
 
     print("Finished Attributes: ", len(df))
@@ -165,6 +170,8 @@ def get_paper_costs()-> pd.DataFrame:
     cached_data["paper"] = paper_prices
     return paper_prices
 
+color_map = {"FC": 4, "B":1}
+
 
 def get_clicks()-> pd.DataFrame:
     if "clicks" in cached_data.keys():
@@ -175,7 +182,10 @@ def get_clicks()-> pd.DataFrame:
     clicks_costs["Machine_size"] = clicks_costs["Attribute"].str.extract(r"(A\d)")
     clicks_costs["Workstyle"] = clicks_costs["Attribute"].str.extract(r"\((.*)\)")
     clicks_costs["Clicks Cost"] = clicks_costs["Clicks Cost"].astype(float)
-    clicks_costs = clicks_costs.drop("Attribute", axis=1)
+    clicks_costs["Color"] = clicks_costs["Attribute"].str.extract(r"-(.*)_")
+    clicks_costs["Front_colour"] = clicks_costs["Color"].map(color_map)
+    clicks_costs["Back_colour"] = np.where(clicks_costs["Workstyle"]== "Simplex", 0, clicks_costs["Front_colour"])
+    clicks_costs = clicks_costs.drop(["Attribute", "Color"], axis=1)
     cached_data["clicks"] = clicks_costs
     return clicks_costs
 
@@ -381,4 +391,6 @@ def get_weights() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    sqm = get_SQM("14.8 x 21", "64 x 91.5", "Litho")
+    print(sqm)
     pass
