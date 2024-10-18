@@ -89,17 +89,21 @@ def get_nth_value(x: str, delim: str, n: int) -> str:
 def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
     print("Calculating Attributes: ", len(df))
+    print("Finishing")
     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
     finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"].fillna(0) + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
     finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
+    print("Extra")
     # Extra Costs
     extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
     extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
-    # Binding Costs # TODO: Check Later how to calculate Wiro Biniding
+    print("Binding")
+    # Binding Costs
     binding_costs = pd.merge(df[["Supplier", "Quantity", "Binding", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Binding"], right_on=["Supplier", "Attribute"])
     binding_costs["Binding_costs"] = binding_costs["Setup-Cost"].fillna(0) + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
     binding_costs["Binding_costs"] = np.where(binding_costs["Binding"] == "None", 0, binding_costs["Binding_costs"])
+    print("Refinement")
     # Refinement Costs
     refinement = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Refinement")
     refinement = pd.melt(refinement, id_vars="Refinement", var_name="Supplier", value_name="Refinement_costs")
@@ -405,6 +409,4 @@ def get_weights() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    sqm = get_SQM("14.8 x 21", "64 x 91.5", "Litho")
-    print(sqm)
     pass

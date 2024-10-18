@@ -17,12 +17,12 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = pd.merge(df, clicks_costs, "left", on=["Machine_size", "Workstyle", "Front_colour", "Back_colour"])
     df[["Machine_size", "Workstyle"]] = df[["Machine_size", "Workstyle"]].astype("category")
     df["Clicks Cost"] = df["Clicks Cost"] * df["Total Sheets"]
-    df["Clicks Cost"] = df["Clicks Cost"].astype("float16")
+    df["Clicks Cost"] = df["Clicks Cost"].astype("float32")
     df = df[df["Clicks Cost"] > 0]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]
-    df["Paper Costs"] = df["Paper Costs"].astype("float16")
-    df["Printing and Paper Costs"] = df["Clicks Cost"] + df["Paper Costs"]
-    df["Printing and Paper Costs"] = df["Printing and Paper Costs"].astype("float16")
+    df["Paper Costs"] = df["Paper Costs"].astype("float32")
+    df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00", df["Paper Costs"],df["Clicks Cost"] + df["Paper Costs"])
+    df["Printing and Paper Costs"] = df["Printing and Paper Costs"].astype("float32")
     additional_prices, markup = get_additional()
     sf_digital_additional = additional_prices[additional_prices["Attribute"].str.contains("SF - Digital")].reset_index(drop=True)
     sf_digital_additional = pd.merge(sf_digital_additional, markup, "left", on="Supplier")
@@ -30,7 +30,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     sf_digital_additional = sf_digital_additional.drop("Attribute", axis=1)
     df = pd.merge(df, sf_digital_additional, "left", on=["Supplier", "Machine_size"])
     df["Printing and Paper incl Markup"] = df["Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100 ) + df["Additional"]
-    df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"].astype("float16")
+    df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"].astype("float32")
     df["Printing and Paper incl Markup"] = np.where(df["colors"] == "colour_00", 0, df["Printing and Paper incl Markup"])
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 # Weight Calculation

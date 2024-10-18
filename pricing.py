@@ -10,6 +10,7 @@ import sf_digital
 import lf_digital
 import gifts
 from datetime import datetime
+import numpy as np
 
 warnings.simplefilter(action="ignore")
 
@@ -21,6 +22,7 @@ def loading_options() -> list[str]:
     args = sys.argv
     files = args[1:]
     return files
+
 
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
@@ -41,7 +43,7 @@ def main(files: list[str]) -> pd.DataFrame:
     num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'GangingQuantity']# 'Quantity']
 
     start = datetime.now()
-    with open(f"log_{timestamp}.txt", "w+") as f:
+    with open(f"log_{timestamp}.txt", "a") as f:
         f.write(f"Started | {file_name} | {timestamp} \n")
 
 
@@ -148,7 +150,11 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
     output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
+    output_data["Total Cost"] = np.where(output_data["Total Cost"] < 100, 100, output_data["Total Costs"])
+    output_data["Shipping Costs"] = np.where(output_data["Shipping Costs"] < 70, 70, output_data["Shipping Costss"])
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
+    output_data["Unit Price"] = np.round(output_data["Total Costs"], 2)
+    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} unit price.csv", index=False)
     output_data["price"] = 1
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(columns)
@@ -158,6 +164,7 @@ def main(files: list[str]) -> pd.DataFrame:
 
     return output_data
 
+# TODO: Include LF Extra in the same data as finishing
 # TODO: Custom Products - Custom Products Sheet
 # Pop
 # Card
@@ -172,10 +179,12 @@ if __name__ == "__main__":
     files = glob.glob("./*tp*combinations.csv")
     if len(loading_options()) > 0:
         files = loading_options()
-    for file in files[25:]:
+    for file in files:
         try:
             main([file])
-        except error as e:
-            with open("Failed Runs.txt", "a") as f:
-                f.write(file+ "\n" + "\t" + e + "\n")
+        except Exception as e:
+            with open(f"Failed Runs{timestamp}.txt", "a") as f:
+                f.write(file+ "\n" + "\t" + str(e) + "\n")
+            with open(f"log_{timestamp}.txt", "a") as f:
+                f.write(f"Error | {file} | {timestamp} \n")
     # output = main(files)

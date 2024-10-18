@@ -75,13 +75,12 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
-    df["Printing and Paper Costs"] = df["Litho Costs"] + df["Paper Costs"]
+    df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00",df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
     df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
 
     df["Additional"] = df["Additional"] * df["Original Multiple"]
 
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
-    df["Printing and Paper incl Markup"] = np.where(df["colors"] == "colour_00", 0, df["Printing and Paper incl Markup"])
 
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 

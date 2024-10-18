@@ -17,7 +17,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     del lf_waste
     lf_double = get_lf_double()
     df["LF Double"] = np.where(df["Paper"].isin(lf_double),2,1)
-    del lf_double
+    # del lf_double
+    df["Printing Rate"] = df["Printing Rate"] * df["SQM"] * df["LF Double"]
     lf_cutting = get_lf_cutting()
     lf_cutting = df.merge(lf_cutting, "left", on=["Supplier", "Paper"])
     df["LF Cutting"] = lf_cutting["LF Cutting"]  # .fillna(0) * df["SQM"]
