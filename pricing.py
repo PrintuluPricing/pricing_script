@@ -3,7 +3,7 @@ import glob
 import sys
 import warnings
 from binding import calculate_binding
-from helper_pricing import get_finishing_costs, get_dimensions, get_SQM, calculate_attributes
+from helper_pricing import get_finishing_costs, get_dimensions, calculate_attributes
 import litho_sf_digital
 import litho
 import sf_digital
@@ -22,9 +22,9 @@ def loading_options() -> list[str]:
     files = args[1:]
     return files
 
+timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 def main(files: list[str]) -> pd.DataFrame:
-    timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
     print(timestamp)
     print(files)
     data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
@@ -41,7 +41,7 @@ def main(files: list[str]) -> pd.DataFrame:
     num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'GangingQuantity']# 'Quantity']
 
     start = datetime.now()
-    with open(f"log_{file_name}_{timestamp}.txt", "w+") as f:
+    with open(f"log_{timestamp}.txt", "w+") as f:
         f.write(f"Started | {file_name} | {timestamp} \n")
 
 
@@ -53,13 +53,16 @@ def main(files: list[str]) -> pd.DataFrame:
     data = data.rename({"Product": "productpart"}, axis=1)
 
     print(len(data))
+    print("Removing Duplicates")
     data = data.drop_duplicates(["Category","productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     unique_combinations = len(data)
+    print("Removed Duplicates")
 
-    with open(f"log_{file_name}_{timestamp}.txt", "a") as f:
+    with open(f"log_{timestamp}.txt", "a") as f:
         f.write(f"{file_name} | {unique_combinations} - unique records \n")
     print(unique_combinations)
     categories = list(set(list(data["Category"])))
+    print("Categories ", categories)
     data["file_type"] = "#"
     data["file_type"] = data["file_type"].astype('category')
     data["PagesNumber"] = data["pages"].str.extract(r"(\d+)")
@@ -69,19 +72,23 @@ def main(files: list[str]) -> pd.DataFrame:
     data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('float16')
     data["Length"] = data["Height (cm)"] * 10
     data["Length"] = data["Length"].astype('float16')
-    # data["SQM"] = data["Format"].apply(get_SQM)
     data["Format"] = data["Format"].astype("category")
+    print("Adjusted all data")
 
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
     gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
     finishing = get_finishing_costs()
+    print("Split categories")
     del data
 
     dfs = []
     if "Litho" in categories or "SF Digital" in categories:
+        print("Adjusting Litho / SF Digital")
         litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
+        print("Finished Litho / SF Digital")
 
+        print("Splitting Litho / SF Digital")
         litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"].reset_index(drop=True)
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
         litho_data = litho_data.reset_index(drop=True)
@@ -136,7 +143,7 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    with open(f"log_{file_name}_{timestamp}.txt", "a") as f:
+    with open(f"log_{timestamp}.txt", "a") as f:
         f.write(f"Finished | {file_name} | {len(output_data)} - unique records \n")
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
@@ -158,13 +165,17 @@ def main(files: list[str]) -> pd.DataFrame:
 # Advertisement
 # Promotion
 # Mask
+# Readd eliptical standee calculation
 
 
 if __name__ == "__main__":
     files = glob.glob("./*tp*combinations.csv")
     if len(loading_options()) > 0:
         files = loading_options()
-    print(files)
-    for file in files:
-        main([file])
+    for file in files[25:]:
+        try:
+            main([file])
+        except error as e:
+            with open("Failed Runs.txt", "a") as f:
+                f.write(file+ "\n" + "\t" + e + "\n")
     # output = main(files)

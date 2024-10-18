@@ -20,6 +20,7 @@ placements = {}
 BLEED = 0.3
 
 cached_data = {}
+cached_data["dimensions"] = {}
 
 
 def get_placements(format: str, size: str, category: str) -> int | float:
@@ -40,7 +41,9 @@ def get_placements(format: str, size: str, category: str) -> int | float:
     return placement
 
 
-def get_dimensions(size) -> tuple[float, float]:
+def get_dimensions(size: str) -> tuple[float, float]:
+    if size in cached_data["dimensions"].keys():
+        return cached_data["dimensions"][size]
     size = str(size).replace("_", ".")
     try:
         height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)", size)[0]
@@ -48,17 +51,28 @@ def get_dimensions(size) -> tuple[float, float]:
         height, width = 1, 1
     height = float(height)
     width = float(width)
+    cached_data["dimensions"][size] = (height, width)
     return height, width
 
 
-def get_SQM(format: str, sheet_size: str, category: str) -> float:
-    height, width = get_dimensions(format)
-    if category == "LF Digital":
-        height, width = get_dimensions(format)
-        return height * width / 10_000
+def get_litho_sf_SQM(sheet_size: str) -> float:
     height, width = get_dimensions(sheet_size)
     return height * width / 10_000
 
+
+def get_lf_SQM(format: str) -> float:
+    height, width = get_dimensions(format)
+    return height * width / 10_000
+
+def get_SQM_df(format: str, sheet_size: str, category: str) -> pd.Series:
+    
+    if category == "LF Digital":
+        height, width = get_dimensions(format)
+        print("Worked LF Digital")
+        return height * width / 10_000
+    height, width = get_dimensions(sheet_size)
+    print("Worked Other")
+    return height * width / 10_000
 
 def read_google_sheet(folder: str, wb_name: str, sheet_name: str) -> pd.DataFrame:
     wb = service_acc.open(wb_name, folder)

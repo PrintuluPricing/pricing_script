@@ -15,7 +15,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Sheets"] = df["Total Sheets"].astype("uint16")
     clicks_costs = get_clicks()
     df = pd.merge(df, clicks_costs, "left", on=["Machine_size", "Workstyle", "Front_colour", "Back_colour"])
-    df.to_csv("Clicks Lookup.csv")
     df[["Machine_size", "Workstyle"]] = df[["Machine_size", "Workstyle"]].astype("category")
     df["Clicks Cost"] = df["Clicks Cost"] * df["Total Sheets"]
     df["Clicks Cost"] = df["Clicks Cost"].astype("float16")

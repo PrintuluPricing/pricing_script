@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_placements, get_paper_costs, get_SQM
+from helper_pricing import get_placements, get_paper_costs, get_litho_sf_SQM
 
 
 categories_sizes = {
@@ -33,13 +33,17 @@ machine_sizes = {
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     global machine_sizes
     global categories_sizes
+    print("GSM Calculation")
     df["GSM"] =df["Paper"].str.extract("(\d+)gsm")
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
+    print("Sheet Size Calculation")
     df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
     df["Sheet Size"] = df["Sheet Size"].str.split(";")
     df = df.explode("Sheet Size")
     df["Sheet Size"] = df["Sheet Size"].astype('category')
-    df["SQM"] = df.apply(lambda x: get_SQM(x["Format"],df["Sheet Size"] , x["Category"]), axis=1).astype('float32')
+    print("SQM Calculation")
+    df["SQM"] = df["Sheet Size"].apply(get_litho_sf_SQM).astype('float32')
+    print("Machine Calculation")
     df["Machine_size"] = df["Sheet Size"].map(machine_sizes)
     df["Machine_size"] = df["Machine_size"].astype('category')
     # Litho Calculations
@@ -49,8 +53,10 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype('uint8')
     df["Back_colour"] = df["colors"].str[-1].astype('uint8')
     # Calculating Placements
+    print("Placements Calculation")
     df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1).astype('uint16')
     df = df[df["Placements"] > 0]
+    print("Sheets")
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]).astype('uint16')
     paper_prices = get_paper_costs()
     df = pd.merge(df, paper_prices, "left", on=["Paper", "Sheet Size"])

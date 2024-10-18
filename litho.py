@@ -33,7 +33,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = pd.merge(df,litho_machines,"left",on="Machine_size")
     df = df[df["Plates Costs"].isna() == False]
     df[["Sheet Size", "Paper", "Machine_size"]]
-    df.dtypes.to_csv("Dtypes Litho Machines Merge.csv")
 
     additional_prices, markup = get_additional()
     litho_additional = additional_prices[additional_prices["Attribute"].str.contains("Litho")].reset_index(drop=True)

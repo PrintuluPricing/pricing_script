@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_SQM
+from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM
 
 SHIPPING_MARKUP = 35
 
@@ -9,7 +9,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_printing_rates = get_lf_mahcines()[["Supplier", "Machine", "colors", "Printing Rate"]]
     df = df.merge(lf_printing_rates, "left", on="colors")
     # df[["Supplier", "Printing Rate", "Machine"]] = lf_printing_rates[["Supplier", "Printing Rate", "Machine"]]
-    df["SQM"] = df.apply(lambda x: get_SQM(x["Format"],"100 x 100" , x["Category"]), axis=1).astype('float32')
+    df["SQM"] = df["Format"].apply(get_lf_SQM).astype('float32')
     df["SQM"] = df["Quantity"]/(10_000 /(df["SQM"] *10_000))
     lf_waste = get_lf_waste()
     lf_waste = df.merge(lf_waste, "left", on=["Supplier", "Paper"])
@@ -32,7 +32,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["LF Material"]
     lf_extra = get_lf_extra()
     lf_extra = df.merge(lf_extra, "left", on=["Extra", "Supplier"])
-    lf_extra.to_csv("LF Extra.csv", index=False)
+    # lf_extra.to_csv("LF Extra.csv", index=False)
     df["LF Extra"] = lf_extra["LF Extra"]
     df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
