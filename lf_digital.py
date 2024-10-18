@@ -9,7 +9,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_printing_rates = get_lf_mahcines()[["Supplier", "Machine", "colors", "Printing Rate"]]
     df = df.merge(lf_printing_rates, "left", on="colors")
     # df[["Supplier", "Printing Rate", "Machine"]] = lf_printing_rates[["Supplier", "Printing Rate", "Machine"]]
-    df["SQM"] = df.apply(lambda x: get_SQM(x["Format"],df["Sheet Size"] , x["Category"]), axis=1).astype('float32')
+    df["SQM"] = df.apply(lambda x: get_SQM(x["Format"],"100 x 100" , x["Category"]), axis=1).astype('float32')
     df["SQM"] = df["Quantity"]/(10_000 /(df["SQM"] *10_000))
     lf_waste = get_lf_waste()
     lf_waste = df.merge(lf_waste, "left", on=["Supplier", "Paper"])
