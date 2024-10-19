@@ -47,7 +47,7 @@ def main(files: list[str]) -> pd.DataFrame:
 
     start = datetime.now()
     with open(f"log_{timestamp}.txt", "a") as f:
-        f.write(f"Started | {file_name} | {timestamp} \n")
+        f.write(f"Started | {file_name} | {timestamp}  | ")
 
 
     data[cat_columns] = data[cat_columns].astype('category')
@@ -64,7 +64,7 @@ def main(files: list[str]) -> pd.DataFrame:
     print("Removed Duplicates")
 
     with open(f"log_{timestamp}.txt", "a") as f:
-        f.write(f"{file_name} | {unique_combinations} - unique records \n")
+        f.write(f" {unique_combinations} - unique records  | ")
     print(unique_combinations)
     categories = list(set(list(data["Category"])))
     print("Categories ", categories)
@@ -149,7 +149,7 @@ def main(files: list[str]) -> pd.DataFrame:
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     with open(f"log_{timestamp}.txt", "a") as f:
-        f.write(f"Finished | {file_name} | {len(output_data)} - unique records \n")
+        f.write(f"Finished | {len(output_data)} - unique records \n")
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
     output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
