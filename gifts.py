@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_weights, get_shipping_costs, get_finishing_costs
+from helper_pricing import get_weights, get_shipping_costs, get_finishing_costs, get_litho_sf_SQM
 
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
@@ -9,6 +9,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df["GSM"] =df["Paper"].str.extract("(\d+)gsm")
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
+    df["SQM"] = get_litho_sf_SQM(df["Format"])  # FIXME: Not Sure about SQM to get GSM, SQM should be based on sheet size, which sheet size to take if no printing
     finishing = get_finishing_costs()
     finishing = finishing[(finishing["value"].isna() == False) & (finishing["Supplier"] != "Quantity")]
     finishing = finishing.reset_index(drop=True)

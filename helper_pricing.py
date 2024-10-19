@@ -62,10 +62,9 @@ def get_litho_sf_SQM(sheet_size: str) -> float:
 
 def get_lf_SQM(format: str) -> float:
     height, width = get_dimensions(format)
-    return height * width / 10_000
+    return 100 / height * 100 / width
 
 def get_SQM_df(format: str, sheet_size: str, category: str) -> pd.Series:
-    
     if category == "LF Digital":
         height, width = get_dimensions(format)
         print("Worked LF Digital")
@@ -129,7 +128,10 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
     df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
 
-    df["Total Costs"] = df["Total Printing Costs"] + df["Shipping Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
+    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
+    df["Total Costs"] = np.where(df["Total Costs"] < 100, 100, df["Total Costs"])
+    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 70, 70, df["Shipping Costs"]) 
+    df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
     df = df[df["Total Costs"].isna() == False]
     df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])

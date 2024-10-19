@@ -10,7 +10,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.merge(lf_printing_rates, "left", on="colors")
     # df[["Supplier", "Printing Rate", "Machine"]] = lf_printing_rates[["Supplier", "Printing Rate", "Machine"]]
     df["SQM"] = df["Format"].apply(get_lf_SQM).astype('float32')
-    df["SQM"] = df["Quantity"]/(10_000 /(df["SQM"] *10_000))
+    df["SQM"] = df["Quantity"]/ df["SQM"]
     lf_waste = get_lf_waste()
     lf_waste = df.merge(lf_waste, "left", on=["Supplier", "Paper"])
     df["Waste %"] = lf_waste["Waste %"].fillna(0)
@@ -18,6 +18,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_double = get_lf_double()
     df["LF Double"] = np.where(df["Paper"].isin(lf_double),2,1)
     # del lf_double
+    print(df["Printing Rate"])
     df["Printing Rate"] = df["Printing Rate"] * df["SQM"] * df["LF Double"]
     lf_cutting = get_lf_cutting()
     lf_cutting = df.merge(lf_cutting, "left", on=["Supplier", "Paper"])
@@ -30,6 +31,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["GSM"] = lf_material["GSM"]
     del lf_material
     df["LF Material"] = df["LF Material"] * df["SQM"] * df["LF Double"] * (df["Waste %"] + 1)
+    df["LF Material"] = df["LF Material"] * df["LF Double"]
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["LF Material"]
     lf_extra = get_lf_extra()
     lf_extra = df.merge(lf_extra, "left", on=["Extra", "Supplier"])
@@ -61,7 +63,10 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Shipping Costs"] = df["Shipping Costs"].astype("float32")
     df["Printing and Paper Markup"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
     df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Option Markup"]/100)
-    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Shipping Costs"]
+    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"]
+    df["Total Costs"] = np.where(df["Total Costs"] < 100, 100, df["Total Costs"])
+    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 70, 70, df["Shipping Costs"]) 
+    df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
 
     df = df.reset_index(drop=True)
     return df

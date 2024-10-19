@@ -23,6 +23,9 @@ def loading_options() -> list[str]:
     files = args[1:]
     return files
 
+def return_first(args):
+    return args[0]
+
 
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
@@ -33,7 +36,7 @@ def main(files: list[str]) -> pd.DataFrame:
 
     file_name = files[0].replace("/", "_")
 
-    columns = ["price", "productpart", "paper", "format", "pages", "Quantity",
+    columns = ["productpart", "paper", "format", "pages", "Quantity",
                "colors", "book_binding", "refinement", "finishing", "options", "file_type"]
     data = pd.concat(pd.read_csv(file, keep_default_na=False) for file in files)
     data = data[data_columns]
@@ -150,17 +153,16 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
     output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
-    output_data["Total Cost"] = np.where(output_data["Total Cost"] < 100, 100, output_data["Total Costs"])
-    output_data["Shipping Costs"] = np.where(output_data["Shipping Costs"] < 70, 70, output_data["Shipping Costss"])
-    output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
-    output_data["Unit Price"] = np.round(output_data["Total Costs"], 2)
-    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} unit price.csv", index=False)
-    output_data["price"] = 1
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(columns)
-    output_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="sum", index=[
+    output_data = output_data.reset_index(drop=True)
+    output_data["price"] = 1
+    output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
+    output_data["Unit Price"] = np.round(output_data["Unit Price"], 2).astype("float32")
+    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} unit price.csv", index=False)
+    final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
-    output_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
+    final_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
 
     return output_data
 
@@ -183,6 +185,7 @@ if __name__ == "__main__":
         try:
             main([file])
         except Exception as e:
+            print(e.with_traceback())
             with open(f"Failed Runs{timestamp}.txt", "a") as f:
                 f.write(file+ "\n" + "\t" + str(e) + "\n")
             with open(f"log_{timestamp}.txt", "a") as f:
