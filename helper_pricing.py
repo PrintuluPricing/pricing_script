@@ -25,7 +25,6 @@ NO_PRICES_EXTRAS = ["None", "A2 - Calendar Option - Black Changes Only"]
 cached_data = {}
 cached_data["dimensions"] = {}
 
-
 def get_placements(format: str, size: str, category: str) -> int | float:
     x, y = get_dimensions(format)
     x = float(x) + BLEED
@@ -88,7 +87,8 @@ def get_nth_value(x: str, delim: str, n: int) -> str:
     return x.split(delim)[n]
 
 
-def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFrame:
+def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
+    finishing = get_finishing_costs()
     df = df.reset_index(drop=True)
     print("Calculating Attributes: ", len(df))
     print("Finishing")
@@ -131,18 +131,17 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
     df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
 
-    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]
-    df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
-    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
-    df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
-    df = df[df["Total Costs"].isna() == False]
-    df = df.sort_values("Total Costs", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
-    print(len(df))
+    # df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]
+    # df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
+    # df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
+    # df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
+    # df = df[df["Total Costs"].isna() == False]
+    # df = df.sort_values("Total Costs", ascending=True)
+    # df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    # print(len(df))
     # df = df.sort_values("Total Costs", ascending=False)
     # df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    df = df.reset_index(drop=True)
-
+    # df = df.reset_index(drop=True)
     print("Finished Attributes: ", len(df))
     df = df.reset_index(drop=True)
     return df
@@ -306,6 +305,19 @@ def get_lf_extra() -> pd.DataFrame:
     return lf_extra
 
 
+def get_lf_refinement() -> pd.DataFrame:
+    if "lf_refinement" in cached_data.keys():
+        return cached_data["lf_refinement"]
+    lf_refinement = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "LF Refinement")
+    lf_refinement = pd.melt(lf_refinement, "Refinement", var_name="Supplier")
+    lf_refinement = lf_refinement[lf_refinement["value"] != ""]
+    lf_refinement["value"] = pd.to_numeric(lf_refinement["value"]).astype("float16")
+    lf_refinement = lf_refinement.rename({"value": "LF Refinement"}, axis=1)
+    lf_refinement[["Supplier", "Refinement"]] = lf_refinement[["Supplier", "Refinement"]].astype("category")
+    cached_data["lf_refinement"] = lf_refinement
+    return lf_refinement
+
+
 def get_wiro_pur_binding_costs() -> pd.DataFrame:
     if "wiro" in cached_data.keys():
         return cached_data["wiro"], cached_data["wiro_thickness"], cached_data["wiro_length"], cached_data["hangers"], cached_data["hanger_length"], cached_data["pur"], cached_data["pur_thickness"], cached_data["pur_quantity"]
@@ -396,8 +408,9 @@ def get_pur_quantity() -> pd.DataFrame:
 def get_shipping_costs() -> pd.DataFrame:
     if "shipping" in cached_data.keys():
         return cached_data["shipping"]
-    shipping = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Shipping").iloc[0, :]
-    shipping = pd.to_numeric(shipping, errors="coerce")
+    shipping = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Shipping")# .iloc[0, :]
+    shipping = shipping[shipping["Destination"] == "National"]
+    shipping[["Minimum", "Minimum KG", "Kg After"]] = shipping[["Minimum", "Minimum KG", "Kg After"]].astype('float32')
     cached_data["shipping"] = shipping
     return shipping
 

@@ -2,8 +2,7 @@ import pandas as pd
 import glob
 import sys
 import warnings
-from binding import calculate_binding
-from helper_pricing import get_finishing_costs, get_dimensions, calculate_attributes
+from helper_pricing import get_finishing_costs, get_dimensions
 import litho_sf_digital
 import litho
 import sf_digital
@@ -101,8 +100,8 @@ def main(files: list[str]) -> pd.DataFrame:
 
         if len(litho_data) > 0:
             litho_data = litho.calculation(litho_data)
-            litho_data = calculate_binding(litho_data)
-            litho_data = calculate_attributes(litho_data, finishing)
+            # litho_data = calculate_binding(litho_data)
+            # litho_data = calculate_attributes(litho_data, finishing)
 
             if len(litho_data) > 0:
                 dfs.append(litho_data)
@@ -112,8 +111,8 @@ def main(files: list[str]) -> pd.DataFrame:
         # SF Digital Calculation
         if len(sf_digital_data) > 0:
             sf_digital_data = sf_digital.calculation(sf_digital_data)
-            sf_digital_data = calculate_binding(sf_digital_data)
-            sf_digital_data = calculate_attributes(sf_digital_data, finishing)
+            # sf_digital_data = calculate_binding(sf_digital_data)
+            # sf_digital_data = calculate_attributes(sf_digital_data, finishing)
 
             if len(sf_digital_data) > 0:
                 dfs.append(sf_digital_data)

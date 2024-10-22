@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_additional, get_litho_machines, get_litho_utilization, get_weights, get_shipping_costs
+from helper_pricing import get_additional, get_litho_machines, get_litho_utilization, get_weights, calculate_attributes
+from shipping import calculate_shipping
+from binding import calculate_binding
 
 SHIPPING_MARKUP = 35
 
@@ -17,13 +19,15 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["pages factor"] = df["pages factor"].astype('uint8')
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
     df["Multiple"] = df["Multiple"].astype("float16")
+    df["Multiple Log"] = df["Multiple"].astype("float16")
     df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"),1)
 
     df["Ganging"] = df["GangingQuantity"] == 1
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
+    df["Original Plates"] = df["Plates"]
     df["Plates"] = np.where(df["OverPrintB"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
-    df["Plates"] = np.where(df["OverPrintFC"], df["Plates"] + (df["Multiple"] - 1) *4, df["Plates"])  # FIXME: To adjust
-    df["Plates"] = df["Plates"].astype("uint8")
+    df["Plates"] = np.where(df["OverPrintFC"], df["Plates"] * df["Multiple"] , df["Plates"])
+    df["Plates"] = df["Plates"].astype("uint16")
     df["Overs"] = df["Plates"] * 50
     df["Overs"] = df["Overs"].astype("uint16")
 
@@ -72,16 +76,13 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
     df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
     # FIX: Check Setup Cost for Simplex / Sheetwise and Work and Turn
-    df["Plates Cost"] = df["Plates"] * df["Plates Costs"]  # FIX: For Same design same plates * df["Original Multiple"]
+    df["Plates Cost"] = df["Plates"] * df["Plates Costs"]  # FIX: * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
-    df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]
+    df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
     df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00",df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
     df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
-
     df["Additional"] = df["Additional"] * df["Original Multiple"]
-
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
-
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 
 # NOTE: Mutliple Sheets -> Cannot exceed the quantity
@@ -108,27 +109,23 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Extra GSM"] = df["Extra GSM"].fillna(0) * df["Quantity"]
     df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
-
-    #FIX: Check Refinement, finishing and Extra weights
-
-# Shipping Costs
-
-    shipping_costs = get_shipping_costs()
-    df["Remaining"] = np.floor(df["Total Weight"] - shipping_costs["Minimum KG"])
-    df["Remaining"] = np.where(df["Remaining"] < 0, 0, df["Remaining"])
-    df["Shipping Costs"] = df["Remaining"] * shipping_costs["Kg After"] + shipping_costs["Minimum"]
-    df["Shipping Costs"] = df["Shipping Costs"] * (1+ SHIPPING_MARKUP / 100)
-    df["Shipping Costs"] = df["Shipping Costs"].astype("float32")
-
-
-    # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Update Correct Values Later
-
-    # df.to_csv("Litho Calculation.csv", index=False)
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
-    # df = df.sort_values("Printing and Paper incl Markup", ascending=False)
-    # df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-
-
     df = df.reset_index(drop=True)
+
+    # FIX: Check Refinement, finishing and Extra weights
+
+    df = calculate_shipping(df)
+    df = calculate_binding(df)
+    df = calculate_attributes(df)
+    # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Update Correct Values Later
+    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]
+    df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
+    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
+    df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
+    df = df[df["Total Costs"].isna() == False]
+    df = df.sort_values("Total Costs", ascending=True)
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    df = df.reset_index(drop=True)
+
     return df

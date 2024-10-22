@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_additional, get_clicks, get_weights, get_paper_costs, get_shipping_costs
+from helper_pricing import get_additional, get_clicks, get_weights, calculate_attributes
+from shipping import calculate_shipping
+from binding import calculate_binding
 
 SHIPPING_MARKUP = 35
 
@@ -49,21 +51,22 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = df["GSM"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
 
-# Shipping Costs
-
-    shipping_costs = get_shipping_costs()
-    df["Remaining"] = np.floor(df["Total Weight"] - shipping_costs["Minimum KG"])
-    df["Remaining"] = np.where(df["Remaining"] < 0, 0, df["Remaining"])
-    df["Shipping Costs"] = df["Remaining"] * shipping_costs["Kg After"] + shipping_costs["Minimum"]
-    df["Shipping Costs"] = df["Shipping Costs"] * (1+ SHIPPING_MARKUP / 100)
-    df["Shipping Costs"] = df["Shipping Costs"].astype("float32")
+    df = calculate_shipping(df)
+    df = calculate_binding(df)
+    df = calculate_attributes(df)
 
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
-    # df = df.sort_values("Printing and Paper incl Markup", ascending=Fales)
-    # df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-
-    # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Updated Later
     print("SF Digital calculation ended   :", len(df))
     df = df.reset_index(drop=True)
+
+    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]
+    df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
+    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
+    df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
+    df = df[df["Total Costs"].isna() == False]
+    df = df.sort_values("Total Costs", ascending=True)
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    df = df.reset_index(drop=True)
+
     return df

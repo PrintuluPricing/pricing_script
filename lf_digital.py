@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM
+from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement
+from shipping import calculate_shipping
 
 SHIPPING_MARKUP = 35
 
@@ -38,6 +39,11 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Extra"] = lf_extra["LF Extra"]
     df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
+    lf_refinement = get_lf_refinement()
+    lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "Supplier"])
+    # lf_extra.to_csv("LF Extra.csv", index=False)
+    df["LF Refinment"] = lf_refinement["LF Extra"]
+    df["LF Refinment"] = df["LF Refinment"] * df["SQM"]
     # TODO: Calculate Refinement
 
 # Weight Calculation
@@ -45,7 +51,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     weights = get_weights()
     refinement_weights = weights[weights["Type"] == "Refinement"]  # .reset_index(drop=True)
     refiement_weights = df[["Refinement"]].merge(refinement_weights, "left", left_on="Refinement", right_on="Attribute")
-    df["Refinement GSM"] = refinement_weights["GSM"]
+    df["Refinement GSM"] = refiement_weights["GSM"]
     extra_weights = weights[weights["Type"] == "Extra"]  # .reset_index(drop=True)
     extra_weights = df[["Extra"]].merge(extra_weights, "left", left_on="Extra", right_on="Attribute")
     df["Extra GSM"] = extra_weights["GSM"]
@@ -56,15 +62,12 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
 # Shipping Costs
 
-    shipping_costs = get_shipping_costs()
-    df["Remaining"] = np.floor(df["Total Weight"] - shipping_costs["Minimum KG"])
-    df["Remaining"] = np.where(df["Remaining"] < 0, 0, df["Remaining"])
-    df["Shipping Costs"] = df["Remaining"] * shipping_costs["Kg After"] + shipping_costs["Minimum"]
-    df["Shipping Costs"] = df["Shipping Costs"] * (1+ SHIPPING_MARKUP / 100)
-    df["Shipping Costs"] = df["Shipping Costs"].astype("float32")
+    df = calculate_shipping(df)
+
     df["Printing and Paper Markup"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
     df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Option Markup"]/100)
-    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"]
+    df["LF Refinement Markup"] = df["LF Refinement"] * ( 1 + df["Refinement Markup"]/100)
+    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Refinement Markup"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
