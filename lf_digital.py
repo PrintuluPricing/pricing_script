@@ -42,8 +42,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_refinement = get_lf_refinement()
     lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "Supplier"])
     # lf_extra.to_csv("LF Extra.csv", index=False)
-    df["LF Refinment"] = lf_refinement["LF Extra"]
-    df["LF Refinment"] = df["LF Refinment"] * df["SQM"]
+    df["LF Refinement"] = lf_refinement["LF Refinement"]
+    df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
     # TODO: Calculate Refinement
 
 # Weight Calculation
@@ -57,9 +57,9 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Extra GSM"] = extra_weights["GSM"]
     df["Refinement GSM"] = df["Refinement GSM"].fillna(0)
     df["Extra GSM"] = df["Extra GSM"].fillna(0)
-    df["GSM"] = df["GSM"] + df["Refinement GSM"] + df["Extra GSM"]
+    df["GSM"] = df["GSM"].fillna(0) + df["Refinement GSM"] + df["Extra GSM"]
+    df["GSM"] = df["GSM"].astype("float32")
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
-
 # Shipping Costs
 
     df = calculate_shipping(df)

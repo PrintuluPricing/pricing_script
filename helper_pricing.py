@@ -430,10 +430,13 @@ def get_custom() -> pd.DataFrame:
     if "custom" in cached_data.keys():
         return cached_data["custom"]
     custom = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Custom")
+    custom["Setup"] = custom["Setup"]
+    custom["Unit KG"] = custom["Unit KG"]
+    custom["Unit Price"] = custom["Unit Price"]
+    custom[["Setup", "Unit Price", "Unit KG"]] = custom[["Setup", "Unit Price", "Unit KG"]].astype("float32")
     cached_data["custom"] = custom
     return custom
 
 
 if __name__ == "__main__":
-    cus = get_custom()
     pass
