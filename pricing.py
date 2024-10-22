@@ -185,7 +185,7 @@ if __name__ == "__main__":
         try:
             main([file])
         except Exception as e:
-            print(e.with_traceback())
+            print(e)
             with open(f"Failed Runs{timestamp}.txt", "a") as f:
                 f.write(file+ "\n" + "\t" + str(e) + "\n")
             with open(f"log_{timestamp}.txt", "a") as f:

@@ -38,6 +38,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Extra"] = lf_extra["LF Extra"]
     df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
+    # TODO: Calculate Refinement
+
 # Weight Calculation
 
     weights = get_weights()
@@ -63,8 +65,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Printing and Paper Markup"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
     df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Option Markup"]/100)
     df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"]
-    df["Total Costs"] = np.where(df["Total Costs"] < 100, 100, df["Total Costs"])
-    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 70, 70, df["Shipping Costs"]) 
+    df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
+    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
 
     df = df.reset_index(drop=True)

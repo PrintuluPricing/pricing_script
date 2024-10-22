@@ -19,6 +19,9 @@ INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 placements = {}
 BLEED = 0.3
 
+NO_PRICES_EXTRAS = ["None", "A2 - Calendar Option - Black Changes Only"]
+
+
 cached_data = {}
 cached_data["dimensions"] = {}
 
@@ -128,9 +131,9 @@ def calculate_attributes(df: pd.DataFrame, finishing: pd.DataFrame)-> pd.DataFra
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
     df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
 
-    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"]
-    df["Total Costs"] = np.where(df["Total Costs"] < 100, 100, df["Total Costs"])
-    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 70, 70, df["Shipping Costs"]) 
+    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]
+    df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
+    df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
     df = df[df["Total Costs"].isna() == False]
     df = df.sort_values("Total Costs", ascending=True)

@@ -22,7 +22,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Ganging"] = df["GangingQuantity"] == 1
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
     df["Plates"] = np.where(df["OverPrintB"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
-    df["Plates"] = np.where(df["OverPrintFC"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
+    df["Plates"] = np.where(df["OverPrintFC"], df["Plates"] + (df["Multiple"] - 1) *4, df["Plates"])  # FIXME: To adjust
     df["Plates"] = df["Plates"].astype("uint8")
     df["Overs"] = df["Plates"] * 50
     df["Overs"] = df["Overs"].astype("uint16")
@@ -67,14 +67,14 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df = df[df["Plates Costs"].isna() == False]
     df = df.reset_index(drop=True)
-    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60 * df["Original Multiple"]
+    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60 # FIX: For same design setup is done once # * df["Original Multiple"]
     df["Setup Time(hour)"] = df["Setup Time(hour)"] * np.where((df["OverPrintB"]) | (df["OverPrintFC"]), df["Multiple"], 1 )
     df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
     df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
     # FIX: Check Setup Cost for Simplex / Sheetwise and Work and Turn
-    df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
+    df["Plates Cost"] = df["Plates"] * df["Plates Costs"]  # FIX: For Same design same plates * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
-    df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
+    df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]
     df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00",df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
     df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
 
