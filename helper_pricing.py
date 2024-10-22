@@ -426,5 +426,14 @@ def get_weights() -> pd.DataFrame:
     return weights
 
 
+def get_custom() -> pd.DataFrame:
+    if "custom" in cached_data.keys():
+        return cached_data["custom"]
+    custom = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Custom")
+    cached_data["custom"] = custom
+    return custom
+
+
 if __name__ == "__main__":
+    cus = get_custom()
     pass

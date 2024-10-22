@@ -8,6 +8,7 @@ import litho
 import sf_digital
 import lf_digital
 import gifts
+import custom
 from datetime import datetime
 import numpy as np
 
@@ -82,7 +83,7 @@ def main(files: list[str]) -> pd.DataFrame:
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
     gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
-    finishing = get_finishing_costs()
+    custom_data = data[data["Category"] == ""]
     print("Split categories")
     del data
 
@@ -127,6 +128,11 @@ def main(files: list[str]) -> pd.DataFrame:
         gifts_data = gifts.calculation(gifts_data)
         if len(gifts_data) > 0:
             dfs.append(gifts_data)
+
+    if "" in categories:
+        custom_data = custom.calculation(custom_data)
+        if len(custom_data) > 0:
+            dfs.append(custom_data)
 
     print("Collecting Data")
     if len(dfs) == 0:
