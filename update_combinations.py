@@ -4,6 +4,19 @@ import glob
 
 combinations = glob.glob("./all_combinations/*csv")
 
+for file in combinations:
+    data = pd.read_csv(file)
+    data["Category"] = data["Category"].fillna("")
+    categories = list(set(data["Category"]))
+    if categories == [""]:
+        print(file)
+        # data["Category"] = "Custom"
+        # data.to_csv(file, index=False)
+
+
+
+
+exit()
 file = combinations[0]
 
 data = pd.read_csv(file, keep_default_na=False)

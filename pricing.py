@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 import sys
 import warnings
-from helper_pricing import get_finishing_costs, get_dimensions
+from helper_pricing import get_dimensions
 import litho_sf_digital
 import litho
 import sf_digital
@@ -83,7 +83,7 @@ def main(files: list[str]) -> pd.DataFrame:
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
     gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
-    custom_data = data[data["Category"] == ""]
+    custom_data = data[data["Category"] == "Custom"]
     print("Split categories")
     del data
 
@@ -120,6 +120,7 @@ def main(files: list[str]) -> pd.DataFrame:
                 del sf_digital_data
 
     if "LF Digital" in categories:
+        print("Started LF Digital")
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         if len(lf_digital_data) > 0:
             dfs.append(lf_digital_data)
@@ -129,7 +130,7 @@ def main(files: list[str]) -> pd.DataFrame:
         if len(gifts_data) > 0:
             dfs.append(gifts_data)
 
-    if "" in categories:
+    if "Custom" in categories:
         custom_data = custom.calculation(custom_data)
         if len(custom_data) > 0:
             dfs.append(custom_data)

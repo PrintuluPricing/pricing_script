@@ -37,12 +37,14 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_extra = df.merge(lf_extra, "left", on=["Extra", "Supplier"])
     # lf_extra.to_csv("LF Extra.csv", index=False)
     df["LF Extra"] = lf_extra["LF Extra"]
+    df["LF Extra"] = np.where(df["Extra"] == "None", 0, df["LF Extra"])
     df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
     lf_refinement = get_lf_refinement()
     lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "Supplier"])
     # lf_extra.to_csv("LF Extra.csv", index=False)
     df["LF Refinement"] = lf_refinement["LF Refinement"]
+    df["LF Refinement"] = np.where(df["Refinement"] == "None", 0, df["LF Refinement"])
     df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
     # TODO: Calculate Refinement
 
