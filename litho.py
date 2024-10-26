@@ -6,7 +6,20 @@ from binding import calculate_binding
 
 SHIPPING_MARKUP = 35
 
-def calculation(df: pd.DataFrame)-> pd.DataFrame:
+
+def printing_calculation(df: pd.DataFrame) -> pd.DataFrame:
+    pass
+
+
+def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
+    pass
+
+
+def overprinting_calculation(df: pd.DataFrame) -> pd.DataFrame:
+    pass
+
+
+def calculation(df: pd.DataFrame) -> pd.DataFrame:
     # FIXME: Update Later
     # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
     df = df.reset_index(drop=True)
@@ -129,3 +142,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
 
     return df
+
+
+if __name__ == "__main__":
+    pass

@@ -46,6 +46,7 @@ def get_placements(format: str, size: str, category: str) -> int | float:
 def get_dimensions(size: str) -> tuple[float, float]:
     if size in cached_data["dimensions"].keys():
         return cached_data["dimensions"][size]
+    size = str(size).replace("format_", "")
     size = str(size).replace("_", ".")
     try:
         height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)", size)[0]
@@ -439,4 +440,6 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    sqm = get_lf_SQM("100 x 200")
+    print(sqm)
     pass
