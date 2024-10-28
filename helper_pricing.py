@@ -440,6 +440,4 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    sqm = get_lf_SQM("100 x 200")
-    print(sqm)
     pass

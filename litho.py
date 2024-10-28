@@ -4,8 +4,10 @@ from helper_pricing import get_additional, get_litho_machines, get_litho_utiliza
 from shipping import calculate_shipping
 from binding import calculate_binding
 
-SHIPPING_MARKUP = 35
 
+
+SHIPPING_MARKUP = 35
+BINDING_NAMES = ["Wiro Binding - Black","Wiro Binding - Silver","Wiro Binding - White","Spiral Binding - Black","Spiral Binding - Silver","Spiral Binding - White","PUR Binding","A2 Wiro Binding - Black with Hanger","A2 Wiro Binding - Silver with Hanger","A2 Wiro Binding - White with Hanger","A3 Wiro Binding - Black with Hanger","A3 Wiro Binding - Silver with Hanger","A3 Wiro Binding - White with Hanger","A4 Wiro Binding - Black with Hanger","A4 Wiro Binding - Silver with Hanger","A4 Wiro Binding - White with Hanger"]
 
 def printing_calculation(df: pd.DataFrame) -> pd.DataFrame:
     pass
@@ -23,9 +25,10 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     # FIXME: Update Later
     # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
     df = df.reset_index(drop=True)
-    print(df.columns)
     print("Litho Calculation Started  :", len(df))
 
+    bindings = df["Binding"].isin(BINDING_NAMES)
+    print(np.sum(bindings))
     df["OverPrintB"] = df["Extra"].str.contains("Black Changes")
     df["OverPrintFC"] = df["Extra"].str.contains("Full Colour")
     df["pages factor"] = np.where(df["pages"].str.contains("page"),2,1)
@@ -33,7 +36,8 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
     df["Multiple"] = df["Multiple"].astype("float16")
     df["Multiple Log"] = df["Multiple"].astype("float16")
-    df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"),1)
+    # df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"),1)
+    df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"), np.where("pages factor" == 2, df["Multiple"] ,1))  # TODO: Check later
 
     df["Ganging"] = df["GangingQuantity"] == 1
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
@@ -89,7 +93,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
     df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
     # FIX: Check Setup Cost for Simplex / Sheetwise and Work and Turn
-    df["Plates Cost"] = df["Plates"] * df["Plates Costs"]  # FIX: * df["Original Multiple"]
+    df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
     df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00",df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
@@ -101,7 +105,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 # NOTE: Mutliple Sheets -> Cannot exceed the quantity
 # NOTE: Brochures 8 Pages 1000 A4 portrait 100 gsm Gloss
 # NOTE: Split for 2 4 pages sections for printing - example No Sections for 8 pages (45.5 x 64) -> 16 (pages) / 4 placements / 2 (because it's pages')
-# NOTE: Sheets = Quantity (1000) * 16 () / 4(placements)  / 2 (pages)
+# NOTE: Sheets = Quantity (1000) * 16 (pages) / 4(placements)  / 2 (pages)
 
 # NOTE: OverPrinting Calculation
 # Black Changes Only
@@ -129,7 +133,10 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     # FIX: Check Refinement, finishing and Extra weights
 
     df = calculate_shipping(df)
-    df = calculate_binding(df)
+    if np.sum(bindings) > 0:
+        df = calculate_binding(df)
+    else:
+        df["Binding_costs"] = 0
     df = calculate_attributes(df)
     # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Update Correct Values Later
     df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]

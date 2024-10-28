@@ -149,7 +149,10 @@ def main(files: list[str]) -> pd.DataFrame:
     output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
     output_data = output_data[output_data["Total Costs"].isna() == False]
     print(len(output_data))
+    # NOTE: First remove_duplicates from the same combination and keep one for each supplier with the lowest cost
+    # Need to check for the same category
     output_data = output_data.sort_values("Total Costs", ascending=True)
+    # output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity", "Category"])
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)

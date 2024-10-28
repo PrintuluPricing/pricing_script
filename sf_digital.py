@@ -5,12 +5,14 @@ from shipping import calculate_shipping
 from binding import calculate_binding
 
 SHIPPING_MARKUP = 35
+BINDING_NAMES = ["Wiro Binding - Black","Wiro Binding - Silver","Wiro Binding - White","Spiral Binding - Black","Spiral Binding - Silver","Spiral Binding - White","PUR Binding","A2 Wiro Binding - Black with Hanger","A2 Wiro Binding - Silver with Hanger","A2 Wiro Binding - White with Hanger","A3 Wiro Binding - Black with Hanger","A3 Wiro Binding - Silver with Hanger","A3 Wiro Binding - White with Hanger","A4 Wiro Binding - Black with Hanger","A4 Wiro Binding - Silver with Hanger","A4 Wiro Binding - White with Hanger"]
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print("SF Digital calculation started   :", len(df))
     df = df.reset_index(drop=True)
     if len(df) == 0:
         return df
+    bindings = df["Binding"].isin(BINDING_NAMES)
     df["Overs"] = np.where(df["Back_colour"] > 0, 4, 2)
     df["Overs"] = df["Overs"].astype("uint8")
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"]
@@ -46,13 +48,16 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     extra_weights = df[["Extra"]].merge(extra_weights, "left", left_on="Extra", right_on="Attribute")
     df["Extra GSM"] = extra_weights["GSM"]
     del extra_weights
-    df["Refinement GSM"] = df["Refinement GSM"].fillna(0)
-    df["Extra GSM"] = df["Extra GSM"].fillna(0)
-    df["GSM"] = df["GSM"] + df["Refinement GSM"] + df["Extra GSM"]
+    df["Refinement GSM"] = df["Refinement GSM"].fillna(0) * df["Total Sheets"]
+    df["Extra GSM"] = df["Extra GSM"].fillna(0) * df["Quantity"]
+    df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
 
     df = calculate_shipping(df)
-    df = calculate_binding(df)
+    if np.sum(bindings) > 0:
+        df = calculate_binding(df)
+    else:
+        df["Binding_costs"] = 0
     df = calculate_attributes(df)
 
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
