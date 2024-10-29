@@ -4,8 +4,12 @@ import gspread
 import re
 
 
-key = "sheets_key_new.json"
-service_acc = gspread.service_account(key)
+KEY = "sheets_key_new.json"
+service_acc = gspread.service_account(KEY)
+
+REMOVED_SUPPLIERS = ["DigitalSplash"]
+FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
+
 
 # variables
 categories_space = {
@@ -99,7 +103,9 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
     print("Extra")
     # Extra Costs
     extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
-    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
+
+    # NOTE: Check later which cases that apply to: Drilling, holes, should be applied as minimum handling fees
+    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + np.where(df["value"] > 0,FIXED_EXTRA_HANDLING, 0) + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
     print("Binding")
     # Binding Costs
@@ -163,6 +169,7 @@ def get_finishing_costs()-> pd.DataFrame:
     finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
     finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
     finishing["value"] = finishing["value"].astype("float32")
+    finishing = finishing[finishing["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     finishing[["Attribute", "Calculation", "Supplier"]] = finishing[["Attribute", "Calculation", "Supplier"]].astype("category")
     cached_data["finishing"] = finishing
     return finishing
@@ -177,7 +184,9 @@ def get_additional()-> tuple[pd.DataFrame, pd.DataFrame]:
     additional_prices = additional_prices[additional_prices["value"] != ""]
     additional_prices["value"] = additional_prices["value"].astype(float)
     additional_prices["Machine_size"] = additional_prices["Attribute"].str.extract(r"(A\d)")
+    additional_prices = additional_prices[additional_prices["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     markup = additional_prices[additional_prices["Attribute"].str.contains("Markup")].reset_index(drop=True)
+    markup = markup[markup["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     markup = markup[["Supplier", "value"]].rename({"value": "Supplier Markup"},axis=1)
     cached_data["additional"] = additional_prices, markup
     return additional_prices, markup
@@ -209,6 +218,7 @@ def get_clicks()-> pd.DataFrame:
     clicks_costs["Front_colour"] = clicks_costs["Color"].map(color_map)
     clicks_costs["Back_colour"] = np.where(clicks_costs["Workstyle"]== "Simplex", 0, clicks_costs["Front_colour"])
     clicks_costs = clicks_costs.drop(["Attribute", "Color"], axis=1)
+    clicks_costs = clicks_costs[clicks_costs["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     cached_data["clicks"] = clicks_costs
     return clicks_costs
 
@@ -222,6 +232,7 @@ def get_litho_machines() -> pd.DataFrame:
     litho_machines["value"] = litho_machines["value"].astype(float)
     litho_machines["Machine_size"] = litho_machines["Attribute"].str.extract(r"(A\d)")
     litho_machines = pd.pivot(litho_machines,columns="Category",values="value",index=["Machine_size","Supplier"]).reset_index()
+    litho_machines = litho_machines[litho_machines["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     litho_machines[["Supplier", "Machine_size"]] = litho_machines[["Supplier", "Machine_size"]].astype("category")
     litho_machines[["Cost", "Plates Costs", "Setup Time", "Sheets / Hour"]] = litho_machines[["Cost", "Plates Costs", "Setup Time", "Sheets / Hour"]].astype('float16')
     cached_data["litho_machines"] = litho_machines
@@ -237,6 +248,7 @@ def get_lf_mahcines() -> pd.DataFrame:
     lf_machines = lf_machines[lf_machines["value"] != ""]
     lf_machines["value"] = lf_machines["value"].astype(float)
     lf_machines = lf_machines.rename({"Color": "colors", "value": "Printing Rate"}, axis=1)
+    lf_mahcines = lf_mahcines[lf_mahcines["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_machines[["Supplier", "colors", "Machine"]] = lf_machines[["Supplier", "colors", "Machine"]].astype("category")
     lf_machines["Printing Rate"] = lf_machines["Printing Rate"].astype("float16")
     cached_data["lf_machines"] = lf_machines
@@ -252,6 +264,7 @@ def get_lf_waste() -> pd.DataFrame:
     lf_waste["value"] = pd.to_numeric(lf_waste["value"])
     lf_waste = lf_waste.rename({"value": "Waste %", "Attribute": "Paper"}, axis=1)
     lf_waste[["Supplier", "Paper"]] = lf_waste[["Supplier", "Paper"]].astype("category")
+    lf_waste = lf_waste[lf_waste["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_waste["Waste %"] = lf_waste["Waste %"].astype('float16')
     cached_data["lf_waste"] = lf_waste
     return lf_waste
@@ -273,6 +286,7 @@ def get_lf_cutting() -> pd.DataFrame:
     lf_cutting = lf_cutting[lf_cutting["value"] != ""]
     lf_cutting["value"] = pd.to_numeric(lf_cutting["value"])
     lf_cutting = lf_cutting.rename({"value": "LF Cutting", "Attribute": "Paper"}, axis=1)
+    lf_cutting = lf_cutting[lf_cutting["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_cutting[["Supplier", "Paper"]] = lf_cutting[["Supplier", "Paper"]].astype("category")
     lf_cutting["LF Cutting"] = lf_cutting["LF Cutting"].astype("float16")
     cached_data["lf_cutting"] = lf_cutting
@@ -288,6 +302,7 @@ def get_lf_material() -> pd.DataFrame:
     lf_material["value"] = pd.to_numeric(lf_material["value"]).astype("float16")
     lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
     lf_material = lf_material.rename({"value": "LF Material", "Attribute": "Paper"}, axis=1)
+    lf_material = lf_material[lf_material["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_material[["Supplier", "Paper"]] = lf_material[["Supplier", "Paper"]].astype("category")
     cached_data["lf_material"] = lf_material
     return lf_material
@@ -301,6 +316,7 @@ def get_lf_extra() -> pd.DataFrame:
     lf_extra = lf_extra[lf_extra["value"] != ""]
     lf_extra["value"] = pd.to_numeric(lf_extra["value"]).astype("float16")
     lf_extra = lf_extra.rename({"value": "LF Extra", "Attribute": "Extra"}, axis=1)
+    lf_extra = lf_extra[lf_extra["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_extra[["Supplier", "Extra"]] = lf_extra[["Supplier", "Extra"]].astype("category")
     cached_data["lf_extra"] = lf_extra
     return lf_extra
@@ -314,6 +330,7 @@ def get_lf_refinement() -> pd.DataFrame:
     lf_refinement = lf_refinement[lf_refinement["value"] != ""]
     lf_refinement["value"] = pd.to_numeric(lf_refinement["value"]).astype("float16")
     lf_refinement = lf_refinement.rename({"value": "LF Refinement"}, axis=1)
+    lf_refinement = lf_refinement[lf_refinement["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_refinement[["Supplier", "Refinement"]] = lf_refinement[["Supplier", "Refinement"]].astype("category")
     cached_data["lf_refinement"] = lf_refinement
     return lf_refinement
