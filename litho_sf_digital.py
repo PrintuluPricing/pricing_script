@@ -6,7 +6,7 @@ from helper_pricing import get_placements, get_paper_costs, get_litho_sf_SQM
 categories_sizes = {
     "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
     # "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
-    "SF Digital": ['32 x 45.5', '32 x 50'] #'32 x 64', '32 x 71', '32 x 91.5'],
+    "SF Digital": ['32 x 45.5', '32 x 50'], #'32 x 64', '32 x 71', '32 x 91.5'],
     "LF Digital": ["100x100"],
 }
 
@@ -57,8 +57,14 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1).astype('uint16')
     df = df[df["Placements"] > 0]
     print("Sheets")
-    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]).astype('uint16')
+    df["pages factor"] = np.where(df["pages"].str.contains("page"), 2, 1)
+    df["pages"] = df["pages"].astype("category")
+
+
+    # FIX: Calculate leaves and sheets based on pages / sheets / 2 if pages
+    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]/ df["pages factor"] ).astype('uint16')
     paper_prices = get_paper_costs()
     df = pd.merge(df, paper_prices, "left", on=["Paper", "Sheet Size"])
     del paper_prices
+    df["Original Paper Costs"]= df["Paper Costs"].astype("float16")
     return df

@@ -105,7 +105,7 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
     extra_costs = pd.merge(df[["Supplier", "Quantity", "Extra", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Extra"], right_on=["Supplier", "Attribute"])
 
     # NOTE: Check later which cases that apply to: Drilling, holes, should be applied as minimum handling fees
-    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + np.where(df["value"] > 0,FIXED_EXTRA_HANDLING, 0) + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
+    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + np.where(extra_costs["value"] > 0,FIXED_EXTRA_HANDLING, 0) + np.where(extra_costs["Calculation"] == "PI", extra_costs["Quantity"] * extra_costs["value"], extra_costs["Total Sheets"] *extra_costs["value"])
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
     print("Binding")
     # Binding Costs

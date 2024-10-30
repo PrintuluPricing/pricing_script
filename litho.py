@@ -27,12 +27,11 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
     print("Litho Calculation Started  :", len(df))
 
-    bindings = df["Binding"].isin(BINDING_NAMES)
-    print(np.sum(bindings))
+    bindings = np.sum(df["Binding"].isin(BINDING_NAMES))
     df["OverPrintB"] = df["Extra"].str.contains("Black Changes")
     df["OverPrintFC"] = df["Extra"].str.contains("Full Colour")
-    df["pages factor"] = np.where(df["pages"].str.contains("page"),2,1)
-    df["pages factor"] = df["pages factor"].astype('uint8')
+    # df["pages factor"] = np.where(df["pages"].str.contains("page"),2,1)
+    # df["pages factor"] = df["pages factor"].astype('uint8')
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
     df["Multiple"] = df["Multiple"].astype("float16")
     df["Multiple Log"] = df["Multiple"].astype("float16")
@@ -78,7 +77,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
     # NOTE: Mutliple Sections Calclation
 
-    # 12 / :q
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["Multiple"])
     df["Multiple"] = np.where((df["Multiple"] > 1) & df["pages factor"] == 1, 1,
                               np.ceil(df["Multiple"])).astype("uint8")
@@ -127,13 +125,14 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
+    # FIX: INCLUDE Category and Sheet Size
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
     df = df.reset_index(drop=True)
 
     # FIX: Check Refinement, finishing and Extra weights
 
     df = calculate_shipping(df)
-    if np.sum(bindings) > 0:
+    if bindings > 0:
         df = calculate_binding(df)
     else:
         df["Binding_costs"] = 0
