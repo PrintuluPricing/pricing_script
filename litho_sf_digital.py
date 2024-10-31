@@ -36,6 +36,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print("GSM Calculation")
     df["GSM"] =df["Paper"].str.extract("(\d+)gsm")
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
+    df["Paper GSM"] = df["GSM"].astype('float16')
     print("Sheet Size Calculation")
     df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
     df["Sheet Size"] = df["Sheet Size"].str.split(";")

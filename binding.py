@@ -54,7 +54,7 @@ def get_closest_quantities(quantity):
 
 def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
-    df["Thickness"] = df["GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
+    df["Thickness"] = df["Paper GSM"].astype(int) * df["PagesNumber"].astype(int) / 2000 + 4
     df["Wiro Thickness"] = df["Thickness"].apply(get_closest_wiro_thickness).astype(str).str.replace("\.0","")
     df["Pur Thickness"] = df["Thickness"].apply(get_closest_pur_thickness).astype(str).str.replace("\.0","")
     df["Pur Thickness"] = df["Pur Thickness"].str.replace("\.0", "", regex=True)
@@ -79,6 +79,7 @@ def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
 
     hangers_prices = get_wiro_pur_binding_costs()[3]
     hangers_prices = df[["Binding", "Hanger Length", "Quantity"]].merge(hangers_prices, "left", left_on=["Binding", "Hanger Length"], right_on=["Attribute", "Length"])
+    hangers_prices.to_csv("Hangers.csv", index=False)
     hangers_prices["Hangers Costs"] = hangers_prices["Setup"] + hangers_prices["value"] * hangers_prices["Quantity_x"]
     df["Hangers Costs"] = hangers_prices["Hangers Costs"].fillna(0)
     del (hangers_prices)
@@ -89,4 +90,6 @@ def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    length = get_closest_hanger_length(420)
+    print(length)
     pass
