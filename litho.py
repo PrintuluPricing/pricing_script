@@ -36,7 +36,6 @@ def overprinting_calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
-    df.to_csv("Litho with index.csv", index=False)
     print("Litho Calculation Started  :", len(df))
 
     bindings = np.sum(df["Binding"].isin(BINDING_NAMES))
@@ -120,15 +119,12 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 
     cheapest = df[["index", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["index", "Sheet Size"]).min("Printing and Paper Costs")
-    print(cheapest.columns)
-    print(cheapest)
     cheapest = cheapest.reset_index()
-    print(cheapest)
     cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("index")
     cheapest = cheapest[["index", "Sheet Size"]]
     cheapest.to_csv("Cheapest.csv")
-    print(cheapest)
     df = df.merge(cheapest,"inner",on=["index","Sheet Size"])
+    del cheapest
 
 
 # NOTE: Mutliple Sheets -> Cannot exceed the quantity
