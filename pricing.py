@@ -155,6 +155,35 @@ def main(files: list[str]) -> pd.DataFrame:
     # Need to check for the same category
     output_data = output_data.sort_values("Total Costs", ascending=True)
     # output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity", "Category"])
+
+
+    # NOTE: Checking the cheapest combinations before taking the max price
+
+
+    cheapest = output_data[["index", "Category", "Printing and Paper incl Markup"]].groupby(["index", "Category"]).min("Printing and Paper Costs")
+    print(cheapest.columns)
+    print(cheapest)
+    cheapest = cheapest.reset_index()
+    print(cheapest)
+    cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("index")
+    cheapest = cheapest[["index", "Category"]]
+    cheapest.to_csv("Cheapest.csv")
+    print(cheapest)
+    output_data = output_data.merge(cheapest,"inner",on=["index","Category"])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)
