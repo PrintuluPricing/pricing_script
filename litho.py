@@ -13,8 +13,21 @@ def printing_calculation(df: pd.DataFrame) -> pd.DataFrame:
     pass
 
 
+# TODO: Include function later based on ganging condition
 def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
-    pass
+    df["Ganging"] = df["GangingQuantity"] == 1
+    df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
+       df["Quantity"] <= 10000)
+    df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]
+    df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
+    df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Setup Cost"] = df["Setup Time"] * (df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
+    df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
+    df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
+    df["Ganging Additional"] = df["Additional"] / df["Placements"] / df["Ganging Utilization"]
+    return df
 
 
 def overprinting_calculation(df: pd.DataFrame) -> pd.DataFrame:
@@ -22,9 +35,8 @@ def overprinting_calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
-    # FIXME: Update Later
-    # FIXME: 1 | 0  Comes from combinations if ganging is possible / True | False
     df = df.reset_index(drop=True)
+    df.to_csv("Litho with index.csv", index=False)
     print("Litho Calculation Started  :", len(df))
 
     bindings = np.sum(df["Binding"].isin(BINDING_NAMES))
@@ -95,10 +107,29 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
     df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00",df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
+
+    # TODO: Working On most effective combinations size
+
+
+
     df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
     df["Additional"] = df["Additional"] * df["Original Multiple"]
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
     df = df[df["Printing and Paper incl Markup"].isna() == False]
+
+
+
+    cheapest = df[["index", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["index", "Sheet Size"]).min("Printing and Paper Costs")
+    print(cheapest.columns)
+    print(cheapest)
+    cheapest = cheapest.reset_index()
+    print(cheapest)
+    cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("index")
+    cheapest = cheapest[["index", "Sheet Size"]]
+    cheapest.to_csv("Cheapest.csv")
+    print(cheapest)
+    df = df.merge(cheapest,"inner",on=["index","Sheet Size"])
+
 
 # NOTE: Mutliple Sheets -> Cannot exceed the quantity
 # NOTE: Brochures 8 Pages 1000 A4 portrait 100 gsm Gloss

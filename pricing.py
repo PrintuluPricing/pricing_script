@@ -61,6 +61,8 @@ def main(files: list[str]) -> pd.DataFrame:
     print("Removing Duplicates")
     data = data.drop_duplicates(["Category","productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     unique_combinations = len(data)
+    data = data.reset_index(drop=True)
+    data = data.reset_index()
     print("Removed Duplicates")
 
     with open(f"log_{timestamp}.txt", "a") as f:

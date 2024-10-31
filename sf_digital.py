@@ -37,6 +37,22 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"].astype("float32")
     df["Printing and Paper incl Markup"] = np.where(df["colors"] == "colour_00", 0, df["Printing and Paper incl Markup"])
     df = df[df["Printing and Paper incl Markup"].isna() == False]
+
+
+# NOTE: Cheapest size Selection
+    cheapest = df[["index", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["index", "Sheet Size"]).min("Printing and Paper Costs")
+    print(cheapest.columns)
+    print(cheapest)
+    cheapest = cheapest.reset_index()
+    print(cheapest)
+    cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("index")
+    cheapest = cheapest[["index", "Sheet Size"]]
+    cheapest.to_csv("Cheapest.csv")
+    print(cheapest)
+    df = df.merge(cheapest,"inner",on=["index","Sheet Size"])
+
+
+
 # Weight Calculation
 
     weights = get_weights()
