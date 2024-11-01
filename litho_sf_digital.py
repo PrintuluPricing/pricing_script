@@ -4,9 +4,9 @@ from helper_pricing import get_placements, get_paper_costs, get_litho_sf_SQM
 
 
 categories_sizes = {
-    "Litho": ['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102'],
+    "Litho": ";".join(['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102']),
     # "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
-    "SF Digital": ['32 x 45.5', '32 x 50'], #'32 x 64', '32 x 71', '32 x 91.5'],
+    "SF Digital": ";".join(['32 x 45.5', '32 x 50']), #'32 x 64', '32 x 71', '32 x 91.5'],
     "LF Digital": ["100x100"],
 }
 
@@ -38,7 +38,10 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
     df["Paper GSM"] = df["GSM"].astype('float16')
     print("Sheet Size Calculation")
-    df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
+    # FIX: Check why SF Digital takes sheet size for 51 x 71
+    # REMOVE Additional Sheet Sizeee!!!!
+    # df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
+    df["Sheet Size"] = df["Category"].map(categories_sizes)
     df["Sheet Size"] = df["Sheet Size"].str.split(";")
     df = df.explode("Sheet Size")
     df["Sheet Size"] = df["Sheet Size"].astype('category')

@@ -61,8 +61,17 @@ def main(files: list[str]) -> pd.DataFrame:
     print("Removing Duplicates")
     data = data.drop_duplicates(["Category","productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     unique_combinations = len(data)
+    unique = data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"]).reset_index(drop=True)
+    unique = unique[["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"]]
+    unique = unique.reset_index(drop=True)
+    unique = unique.reset_index()
+    unique = unique.rename({"index":"idx"}, axis=1)
+    data = data.rename({"index":"idx"}, axis=1)
     data = data.reset_index(drop=True)
-    data = data.reset_index()
+    data = data.merge(unique, "left", on=["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    data.to_csv("Check Data.csv", index=False)
+    del unique
+    print(data.columns)
     print("Removed Duplicates")
 
     with open(f"log_{timestamp}.txt", "a") as f:
@@ -153,21 +162,23 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(output_data))
     # NOTE: First remove_duplicates from the same combination and keep one for each supplier with the lowest cost
     # Need to check for the same category
-    output_data = output_data.sort_values("Total Costs", ascending=True)
     # output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity", "Category"])
 
 
     # NOTE: Checking the cheapest combinations before taking the max price
+    output_data = output_data.reset_index(drop=True)
+    output_data = output_data.sort_values("Total Costs", ascending=True)
 
 
-    cheapest = output_data[["index", "Category", "Printing and Paper incl Markup"]].groupby(["index", "Category"]).min("Printing and Paper Costs")
-    cheapest = cheapest.reset_index()
-    cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("index")
-    cheapest = cheapest[["index", "Category"]]
+    cheapest = output_data[["idx", "Category", "Total Costs"]].groupby(["idx", "Category"]).min("Total Costs")
     cheapest.to_csv("Cheapest.csv")
-    output_data = output_data.merge(cheapest,"inner",on=["index","Category"])
+    cheapest = cheapest.reset_index()
+    cheapest = cheapest.sort_values("Total Costs", ascending=True).drop_duplicates("idx")
+    cheapest.to_csv("Cheapest1.csv")
+    cheapest = cheapest[["idx", "Category"]]
+    cheapest.to_csv("Cheapest2.csv")
+    output_data = output_data.merge(cheapest,"inner",on=["idx","Category"])
     del cheapest
-
 
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     print(len(output_data))

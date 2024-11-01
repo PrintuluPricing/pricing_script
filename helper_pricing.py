@@ -137,6 +137,7 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
     df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
     df["Extra Costs"] = df["Extra_costs"] * (1 + df["Option Markup"] /100)
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
+    df["Finishing Costs"] = df["Finishing_costs"] *(1 + df["Finishing Markup"] /100)
     df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
 
     # df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]

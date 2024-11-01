@@ -40,12 +40,11 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # NOTE: Cheapest size Selection
-    cheapest = df[["index", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["index", "Sheet Size"]).min("Printing and Paper Costs")
+    cheapest = df[["idx", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["idx", "Sheet Size"]).min("Printing and Paper incl Markup")
     cheapest = cheapest.reset_index()
-    cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("index")
-    cheapest = cheapest[["index", "Sheet Size"]]
-    cheapest.to_csv("Cheapest.csv")
-    df = df.merge(cheapest,"inner",on=["index","Sheet Size"])
+    cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("idx")
+    cheapest = cheapest[["idx", "Sheet Size"]]
+    df = df.merge(cheapest,"inner",on=["idx","Sheet Size"])
     del cheapest
 
 
@@ -79,7 +78,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print("SF Digital calculation ended   :", len(df))
     df = df.reset_index(drop=True)
 
-    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing_costs"]
+    df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing Costs"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
@@ -87,5 +86,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     df = df.reset_index(drop=True)
+    df.to_csv("Check SF Digital.csv", index=False)
 
     return df
