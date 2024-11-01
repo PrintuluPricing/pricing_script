@@ -250,7 +250,7 @@ def get_lf_mahcines() -> pd.DataFrame:
     lf_machines = lf_machines[lf_machines["value"] != ""]
     lf_machines["value"] = lf_machines["value"].astype(float)
     lf_machines = lf_machines.rename({"Color": "colors", "value": "Printing Rate"}, axis=1)
-    lf_mahcines = lf_mahcines[lf_mahcines["Supplier"].isin(REMOVED_SUPPLIERS) == False]
+    lf_machines = lf_machines[lf_machines["Supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_machines[["Supplier", "colors", "Machine"]] = lf_machines[["Supplier", "colors", "Machine"]].astype("category")
     lf_machines["Printing Rate"] = lf_machines["Printing Rate"].astype("float16")
     cached_data["lf_machines"] = lf_machines

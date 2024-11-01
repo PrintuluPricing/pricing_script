@@ -60,12 +60,12 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(data))
     print("Removing Duplicates")
     data = data.drop_duplicates(["Category","productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    unique_combinations = len(data)
     unique = data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"]).reset_index(drop=True)
     unique = unique[["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"]]
     unique = unique.reset_index(drop=True)
     unique = unique.reset_index()
     unique = unique.rename({"index":"idx"}, axis=1)
+    unique_combinations = len(unique)
     data = data.rename({"index":"idx"}, axis=1)
     data = data.reset_index(drop=True)
     data = data.merge(unique, "left", on=["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
