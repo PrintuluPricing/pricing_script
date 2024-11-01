@@ -9,7 +9,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df["GSM"] =df["Paper"].str.extract("(\d+)gsm")
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
-    df["SQM"] = get_litho_sf_SQM(df["Format"])  # FIXME: Not Sure about SQM to get GSM, SQM should be based on sheet size, which sheet size to take if no printing
+    df["SQM"] = df["Format"].apply(get_litho_sf_SQM).astype('float32') # get_litho_sf_SQM(df["Format"])  # FIXME: Not Sure about SQM to get GSM, SQM should be based on sheet size, which sheet size to take if no printing
+    # df["SQM"] = df["Sheet Size"].apply(get_litho_sf_SQM).astype('float32')
     finishing = get_finishing_costs()
     finishing = finishing[(finishing["value"].isna() == False) & (finishing["Supplier"] != "Quantity")]
     finishing = finishing.reset_index(drop=True)

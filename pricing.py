@@ -218,7 +218,8 @@ if __name__ == "__main__":
     if len(loading_options()) > 0:
         files = loading_options()
     for file in files:
-        # main([file])
+        main([file])
+        exit()
         try:
             main([file])
         except Exception as e:

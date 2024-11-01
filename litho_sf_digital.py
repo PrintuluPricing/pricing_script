@@ -7,7 +7,7 @@ categories_sizes = {
     "Litho": ";".join(['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102']),
     # "SF Digital": ['45.5 x 64', '32 x 45.5', '32 x 50', '32 x 64', '32 x 71', '32 x 91.5'],
     "SF Digital": ";".join(['32 x 45.5', '32 x 50']), #'32 x 64', '32 x 71', '32 x 91.5'],
-    "LF Digital": ["100x100"],
+"LF Digital": "100x100",
 }
 
 categories_space = {

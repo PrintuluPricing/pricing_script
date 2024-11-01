@@ -459,4 +459,7 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    sqm = get_litho_sf_SQM("format_20x28_7_0")
+    print(sqm)
+
     pass
