@@ -3,7 +3,11 @@ import numpy as np
 from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement
 from shipping import calculate_shipping
 
+# NOTE: Constants
 SHIPPING_MARKUP = 35
+FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
+FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
+FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
@@ -36,7 +40,9 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_extra = get_lf_extra()
     lf_extra = df.merge(lf_extra, "left", on=["Extra", "Supplier"])
     # lf_extra.to_csv("LF Extra.csv", index=False)
+    # FIX: Update minimum charge of R75 for any extra that has a cost
     df["LF Extra"] = lf_extra["LF Extra"]
+    df["LF Extra"] = np.where(df["LF Extra"] > 0, df["LF Extra"] + FIXED_EXTRA_HANDLING, df["LF Extra"])
     df["LF Extra"] = np.where(df["Extra"] == "None", 0, df["LF Extra"])
     df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
@@ -44,6 +50,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "Supplier"])
     # lf_extra.to_csv("LF Extra.csv", index=False)
     df["LF Refinement"] = lf_refinement["LF Refinement"]
+    df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
     df["LF Refinement"] = np.where(df["Refinement"] == "None", 0, df["LF Refinement"])
     df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
     # TODO: Calculate Refinement

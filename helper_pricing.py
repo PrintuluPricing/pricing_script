@@ -9,6 +9,8 @@ service_acc = gspread.service_account(KEY)
 
 REMOVED_SUPPLIERS = ["DigitalSplash"]
 FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
+FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
+FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
 
 
 # variables
@@ -98,7 +100,7 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
     print("Calculating Attributes: ", len(df))
     print("Finishing")
     finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
-    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"].fillna(0) + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
+    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"].fillna(0) +np.where(finishing_costs["value"] > 0,FIXED_FINISHING_HANDLING, 0)  + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
     finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
     print("Extra")
     # Extra Costs
@@ -132,6 +134,7 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
     df = pd.merge(df, refinement, "left", on=["Supplier", "Refinement"])
     df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
+    df["Refinement_costs"] = np.where(df["Refinement_costs"]> 0, df["Refinement_costs"] + FIXED_REFINEMENT_HANDLING, 0)
     df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
 
     df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
