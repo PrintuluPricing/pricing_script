@@ -78,18 +78,18 @@ def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
     del (pur_prices)
 
     hangers_prices = get_wiro_pur_binding_costs()[3]
-    hangers_prices = df[["Binding", "Hanger Length", "Quantity"]].merge(hangers_prices, "left", left_on=["Binding", "Hanger Length"], right_on=["Attribute", "Length"])
-    hangers_prices.to_csv("Hangers.csv", index=False)
-    hangers_prices["Hangers Costs"] = hangers_prices["Setup"] + hangers_prices["value"] * hangers_prices["Quantity_x"]
+    hangers_prices = hangers_prices.drop_duplicates(["Attribute", "Length"]).reset_index(drop=True)
+    hangers_prices.to_csv("Hanger Prices.csv", index=False)
+    hangers_prices = df[["Binding", "Hanger Length"]].merge(hangers_prices, "left", left_on=["Binding", "Hanger Length"], right_on=["Attribute", "Length"])
+    hangers_prices["Hangers Costs"] = hangers_prices["Setup"] + hangers_prices["value"] * hangers_prices["Quantity"]
+    hangers_prices.to_csv("Hanger.csv", index=False)
     df["Hangers Costs"] = hangers_prices["Hangers Costs"].fillna(0)
     del (hangers_prices)
-    df["Binding_costs"] = df["Wiro Costs"] + df["Hangers Costs"] + df["Pur Costs"]
+    df["Binding_costs"] = df["Wiro Costs"].fillna(0) + df["Hangers Costs"].fillna(0) + df["Pur Costs"].fillna(0)
     df["Binding_costs"] = df["Binding_costs"].fillna(0)
     df = df.reset_index(drop=True)
     return df
 
 
 if __name__ == "__main__":
-    length = get_closest_hanger_length(420)
-    print(length)
     pass
