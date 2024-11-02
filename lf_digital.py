@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement
+from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement, get_finishing_costs
 from shipping import calculate_shipping
 
 # NOTE: Constants
@@ -53,7 +53,14 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
     df["LF Refinement"] = np.where(df["Refinement"] == "None", 0, df["LF Refinement"])
     df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
-    # TODO: Calculate Refinement
+    # TODO: Calculate Finishing
+
+    finishing = get_finishing_costs()
+    finishing_costs = pd.merge(df[["Supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Finishing"], right_on=["Supplier", "Attribute"])
+    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"].fillna(0) +np.where(finishing_costs["value"] > 0,FIXED_FINISHING_HANDLING, 0)  + np.where(finishing_costs["Calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["value"], finishing_costs["Total Sheets"] *finishing_costs["value"])
+    finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
+    df["LF Finishing"] = finishing_costs["Finishing_costs"]
+
 
 # Weight Calculation
 
@@ -76,10 +83,18 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Printing and Paper Markup"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
     df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Option Markup"]/100)
     df["LF Refinement Markup"] = df["LF Refinement"] * ( 1 + df["Refinement Markup"]/100)
-    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Refinement Markup"]
+    df["LF Finishing Markup"] = df["LF Finishing"] * ( 1 + df["Option Markup"]/100)
+    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Refinement Markup"] + df["LF Finishing Markup"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
 
     df = df.reset_index(drop=True)
     return df
+
+
+
+
+if __name__ == "__main__":
+    finishing = get_finishing_costs()
+    print(finishing)
