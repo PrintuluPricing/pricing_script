@@ -123,7 +123,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("idx")
     cheapest = cheapest[["idx", "Sheet Size"]]
     df = df.merge(cheapest,"inner",on=["idx","Sheet Size"])
-    cheapest.to_csv("Litho Cheapest.csv", index=False)
     del cheapest
 
 

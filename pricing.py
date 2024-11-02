@@ -69,7 +69,6 @@ def main(files: list[str]) -> pd.DataFrame:
     data = data.rename({"index":"idx"}, axis=1)
     data = data.reset_index(drop=True)
     data = data.merge(unique, "left", on=["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    data.to_csv("Check Data.csv", index=False)
     del unique
     print(data.columns)
     print("Removed Duplicates")
@@ -171,12 +170,9 @@ def main(files: list[str]) -> pd.DataFrame:
 
 
     cheapest = output_data[["idx", "Category", "Total Costs"]].groupby(["idx", "Category"]).min("Total Costs")
-    cheapest.to_csv("Cheapest.csv")
     cheapest = cheapest.reset_index()
     cheapest = cheapest.sort_values("Total Costs", ascending=True).drop_duplicates("idx")
-    cheapest.to_csv("Cheapest1.csv")
     cheapest = cheapest[["idx", "Category"]]
-    cheapest.to_csv("Cheapest2.csv")
     output_data = output_data.merge(cheapest,"inner",on=["idx","Category"])
     del cheapest
 
@@ -218,8 +214,6 @@ if __name__ == "__main__":
     if len(loading_options()) > 0:
         files = loading_options()
     for file in files:
-        main([file])
-        exit()
         try:
             main([file])
         except Exception as e:
@@ -228,4 +222,3 @@ if __name__ == "__main__":
                 f.write(file+ "\n" + "\t" + str(e) + "\n")
             with open(f"log_{timestamp}.txt", "a") as f:
                 f.write(f"Error | {file} | {timestamp} \n")
-    # output = main(files)

@@ -93,8 +93,5 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     return df
 
 
-
-
 if __name__ == "__main__":
-    finishing = get_finishing_costs()
-    print(finishing)
+    pass

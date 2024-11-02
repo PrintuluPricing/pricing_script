@@ -72,7 +72,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = calculate_attributes(df)
 
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
-    df.to_csv("SF Digital Check.csv", index=False)
     # FIX: include sheet size and category
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     print("SF Digital calculation ended   :", len(df))
@@ -86,6 +85,5 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     df = df.reset_index(drop=True)
-    df.to_csv("Check SF Digital.csv", index=False)
 
     return df
