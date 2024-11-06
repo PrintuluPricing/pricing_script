@@ -172,7 +172,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
     df = df.reset_index(drop=True)
-    df.to_csv("Litho Checks.csv", index=False)
 
     return df
 
