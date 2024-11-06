@@ -105,7 +105,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
-    df["Printing and Paper Costs"] = np.where((df["colors"] == "colour_00") | df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
+    df["Printing and Paper Costs"] = np.where((df["colors"] == "colour_00") | (df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
 
     # TODO: Working On most effective combinations size
 
