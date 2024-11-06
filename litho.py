@@ -151,7 +151,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
-    # FIX: INCLUDE Category and Sheet Size
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
     df = df.reset_index(drop=True)
 
@@ -163,7 +162,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["Binding_costs"] = 0
     df = calculate_attributes(df)
-    # df["Total Costs"] = df["Printing and Paper incl Markup"]  # FIX: Update Correct Values Later
     df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing Costs"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
