@@ -18,11 +18,11 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Ganging"] = df["GangingQuantity"] == 1
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
        df["Quantity"] <= 10000)
-    df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]
+    df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]  # CHECK: to check if pages should divide by 2 
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
-    df["Ganging Setup Cost"] = df["Setup Time"] * (df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
-    df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
+    df["Placements"] / df["Ganging Utilization"]  # CHECK: NEED to check the calculation for brackets
     df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
     df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
@@ -31,6 +31,13 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def overprinting_calculation(df: pd.DataFrame) -> pd.DataFrame:
+    #TODO: Do the checks first in the calculation function
+    pass
+
+
+
+def litho_calculation(df: pd.DataFrame) -> pd.DataFrame:
+    # TODO: Check the calculation for litho based on specific inputs and apply to ganging?
     pass
 
 
@@ -41,14 +48,10 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     bindings = np.sum(df["Binding"].isin(BINDING_NAMES))
     df["OverPrintB"] = df["Extra"].str.contains("Black Changes")
     df["OverPrintFC"] = df["Extra"].str.contains("Full Colour")
-    # df["pages factor"] = np.where(df["pages"].str.contains("page"),2,1)
-    # df["pages factor"] = df["pages factor"].astype('uint8')
     df["Multiple"] = df["PagesNumber"] / df["Placements"] / df["pages factor"]
     df["Multiple"] = df["Multiple"].astype("float16")
     df["Multiple Log"] = df["Multiple"].astype("float16")
-    # df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"),1)
     df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"), np.where("pages factor" == 2, df["Multiple"] ,1))  # TODO: Check later
-
     df["Ganging"] = df["GangingQuantity"] == 1
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
     df["Original Plates"] = df["Plates"]
@@ -78,8 +81,9 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
-    df["Ganging Setup Cost"] = df["Setup Time"] * (df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
-    df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
+    df["Placements"] / df["Ganging Utilization"]  # FIX: Seems to be error with the brackets
+
     df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
     df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
@@ -107,15 +111,17 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
     df["Printing and Paper Costs"] = np.where((df["colors"] == "colour_00") | (df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
 
-    # TODO: Working On most effective combinations size
 
+    # TODO: Working On most effective combinations size -> Done??
 
 
     df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
+    # FIX: Ganging additional missing calculation
+
+
     df["Additional"] = df["Additional"] * df["Original Multiple"]
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
     df = df[df["Printing and Paper incl Markup"].isna() == False]
-
 
 
     cheapest = df[["idx", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["idx", "Sheet Size"]).min("Printing and Paper Costs")

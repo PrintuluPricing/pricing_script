@@ -12,4 +12,8 @@ Litho Costs multiplied by Section Multiple
 
 
 ### Section Adjustment
-# =IF(AND(AllProductCombinations[@[Category]:[Category]]="litho",AllProductCombinations[@[book_binding]:[book_binding]]<>"binding_none"),IF(AllProductCombinations[@[pagesNum]:[pagesNum]]/[@[Placements_45.5 x 64]]/2>=1.25,1,0),0)
+# =IF(AND(AllProductCombinations[@[Category]:[Category]]="litho",AllProductCombinations[@[book_binding]:[book_binding]]<>"binding_none"),IF(AllProductCombinations[@[pagesNum]:[p
+agesNum]]/[@[Placements_45.5 x 64]]/2>=1.25,1,0),0)
+
+
+items('for_each')['[SumRechnung]']
