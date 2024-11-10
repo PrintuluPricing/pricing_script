@@ -18,7 +18,7 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Ganging"] = df["GangingQuantity"] == 1
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
        df["Quantity"] <= 10000)
-    df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]  # CHECK: to check if pages should divide by 2 
+    df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"] / df["pages factor"]
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
@@ -124,7 +124,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 
 
-    cheapest = df[["idx", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["idx", "Sheet Size"]).min("Printing and Paper Costs")
+    cheapest = df[["idx", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["idx", "Sheet Size"]).min("Printing and Paper incl Markup")
     cheapest = cheapest.reset_index()
     cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("idx")
     cheapest = cheapest[["idx", "Sheet Size"]]
