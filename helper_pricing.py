@@ -113,7 +113,7 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
     # Binding Costs
     binding_costs = pd.merge(df[["Supplier", "Quantity", "Binding", "Total Sheets"]], finishing, "left", left_on=["Supplier", "Binding"], right_on=["Supplier", "Attribute"])
     binding_costs["Binding_costs"] = binding_costs["Setup-Cost"].fillna(0) + np.where(binding_costs["Calculation"] == "PI", binding_costs["Quantity"] * binding_costs["value"], binding_costs["Total Sheets"] *binding_costs["value"])
-    binding_costs["Binding_costs"] = np.where(binding_costs["Binding_costs"] == 0, None, binding_costs["Binding_costs"])
+    # binding_costs["Binding_costs"] = np.where(binding_costs["Binding_costs"] == 0, None, binding_costs["Binding_costs"])
     binding_costs["Binding_costs"] = np.where(binding_costs["Binding"] == "None", 0, binding_costs["Binding_costs"])
     print("Refinement")
     # Refinement Costs
@@ -124,7 +124,7 @@ def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
 
     df["Finishing_costs"] = finishing_costs["Finishing_costs"]
     # CHECK: To check for binding costs for law print if overrwritten by Outsource
-    df["Binding_costs"] np.where(binding_costs["Binding_costs"]> 0, df["Binding_costs"], binding_costs["Binding_costs"])
+    df["Binding_costs"] = np.where(binding_costs["Binding_costs"]> 0, df["Binding_costs"], binding_costs["Binding_costs"])
     # CHECK: OLD LINE
     # df["Binding_costs"] = df["Binding_costs"] + binding_costs["Binding_costs"].fillna(0)
     df["Extra_costs"] = extra_costs["Extra_costs"]
