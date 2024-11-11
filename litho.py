@@ -82,48 +82,39 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
-    df["Placements"] / df["Ganging Utilization"]  # FIX: Seems to be error with the brackets
-
+    df["Placements"] / df["Ganging Utilization"]
     df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
     df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
-
+    df["Ganging Printing Markup"] = df["Ganging Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100)
     df["Ganging Additional"] = df["Additional"] / df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Total"] = df["Ganging Printing Markup"] + df["Ganging Additional"]
 
     # NOTE: Mutliple Sections Calclation
 
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["Multiple"])
-    df["Multiple"] = np.where((df["Multiple"] > 1) & df["pages factor"] == 1, 1,
-                              np.ceil(df["Multiple"])).astype("uint8")
-    # df["Original Multiple"] = np.ceil(df["Original Multiple"])
+    df["Multiple"] = np.where((df["Multiple"] > 1) & df["pages factor"] == 1, 1, np.ceil(df["Multiple"])).astype("uint8")
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"] * df["Multiple"]
     #NOTE: Normal Calculation
 
     df = df[df["Plates Costs"].isna() == False]
     df = df.reset_index(drop=True)
-    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60 # FIX: For same design setup is done once # * df["Original Multiple"]
+    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60 # CHECK: For same design setup is done once # * df["Original Multiple"]
     df["Setup Time(hour)"] = df["Setup Time(hour)"] * np.where((df["OverPrintB"]) | (df["OverPrintFC"]), df["Multiple"], 1 )
     df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
     df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
-    # FIX: Check Setup Cost for Simplex / Sheetwise and Work and Turn
     df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
-    df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # FIXME: Paper Cost is overriten
+    df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]  # CHECK: Paper Cost is overriten
     df["Printing and Paper Costs"] = np.where((df["colors"] == "colour_00") | (df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
-
-
-    # TODO: Working On most effective combinations size -> Done??
-
-
-    df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper Costs", "Ganging Printing and Paper Costs"]] , axis=1),df["Printing and Paper Costs"])
-    # FIX: Ganging additional missing calculation
-
-
+    df["Printing and Paper incl Markup"] = np.where((df["colors"] == "colour_00") | (df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
     df["Additional"] = df["Additional"] * df["Original Multiple"]
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
+
+    df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper incl Markup", "Ganging Total"]] , axis=1),df["Printing and Paper Costs"])
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 
-
+    # NOTE: Cheapest Calculation
     cheapest = df[["idx", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["idx", "Sheet Size"]).min("Printing and Paper incl Markup")
     cheapest = cheapest.reset_index()
     cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("idx")
@@ -160,7 +151,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
     df = df.reset_index(drop=True)
 
-    # FIX: Check Refinement, finishing and Extra weights
+    #CHECK: Refinement, finishing and Extra weights
 
     df = calculate_shipping(df)
     if bindings > 0:
