@@ -344,7 +344,7 @@ def get_lf_refinement() -> pd.DataFrame:
     return lf_refinement
 
 
-def get_wiro_pur_binding_costs() -> pd.DataFrame:
+def get_wiro_pur_binding_costs() -> tuple[list[float | pd.Series]]:
     if "wiro" in cached_data.keys():
         return cached_data["wiro"], cached_data["wiro_thickness"], cached_data["wiro_length"], cached_data["hangers"], cached_data["hanger_length"], cached_data["pur"], cached_data["pur_thickness"], cached_data["pur_quantity"]
     binding_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Binding")
@@ -391,7 +391,7 @@ def get_litho_utilization()-> pd.DataFrame:
     return litho_utilization
 
 
-def get_wiro_thickness() -> pd.DataFrame:
+def get_wiro_thickness() -> list[float]:
     if "wiro_thickness" in cached_data.keys():
         return cached_data["wiro_thickness"]
     wiro_thickness = get_wiro_pur_binding_costs()[1]
@@ -407,7 +407,7 @@ def get_wiro_length() -> pd.DataFrame:
     return wiro_length
 
 
-def get_pur_thickness() -> pd.DataFrame:
+def get_pur_thickness() -> list[float]:
     if "pur_thickness" in cached_data.keys():
         return cached_data["pur_thickness"]
     pur_thickness = get_wiro_pur_binding_costs()[6]
