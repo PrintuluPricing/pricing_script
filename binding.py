@@ -8,7 +8,7 @@ key = "sheets_key_new.json"
 service_acc = gspread.service_account(key)
 
 
-def get_closest_thickness(thickness, binding_thickness):
+def get_closest_thickness(thickness: float, binding_thickness: list[float]) -> float:
     if thickness in binding_thickness:
         return thickness
     binding_thickness_bigger = [qty for qty in binding_thickness if qty > thickness]
