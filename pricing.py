@@ -29,7 +29,7 @@ def return_first(args):
 
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
-def main(files: list[str]) -> pd.DataFrame:
+def main(files: list[str]) -> pd.DataFrame | None:
     print(timestamp)
     print(files)
     data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
@@ -70,7 +70,6 @@ def main(files: list[str]) -> pd.DataFrame:
     data = data.reset_index(drop=True)
     data = data.merge(unique, "left", on=["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
     del unique
-    print(data.columns)
     print("Removed Duplicates")
 
     with open(f"log_{timestamp}.txt", "a") as f:
@@ -161,7 +160,6 @@ def main(files: list[str]) -> pd.DataFrame:
     print(len(output_data))
     # NOTE: First remove_duplicates from the same combination and keep one for each supplier with the lowest cost
     # Need to check for the same category
-    # output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity", "Category"])
 
     # NOTE: Checking the cheapest combinations before taking the max price
     output_data = output_data.reset_index(drop=True)
