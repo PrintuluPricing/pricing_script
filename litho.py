@@ -15,7 +15,7 @@ def printing_calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 # TODO: Include function later based on ganging condition
 def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
-    df["Ganging"] = df["GangingQuantity"] == 1
+    df["Ganging"] = df["GangingQuantity"] == 1  # FIX: to check later what to use for the conditions
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
        df["Quantity"] <= 10000)
     df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"] / df["pages factor"]
@@ -32,6 +32,9 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
 
 def overprinting_calculation(df: pd.DataFrame) -> pd.DataFrame:
     #TODO: Do the checks first in the calculation function
+    # CHECK: Overprint is based on multiple and automatically calculated
+    # df["Plates"] = np.where(df["OverPrintB"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
+    # df["Setup Time(hour)"] = df["Setup Time(hour)"] * np.where((df["OverPrintB"]) | (df["OverPrintFC"]), df["Multiple"], 1 )
     pass
 
 
@@ -45,6 +48,8 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
     print("Litho Calculation Started  :", len(df))
 
+    # NOTE: Precalculations
+
     bindings = np.sum(df["Binding"].isin(BINDING_NAMES))
     df["OverPrintB"] = df["Extra"].str.contains("Black Changes")
     df["OverPrintFC"] = df["Extra"].str.contains("Full Colour")
@@ -52,7 +57,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Multiple"] = df["Multiple"].astype("float16")
     df["Multiple Log"] = df["Multiple"].astype("float16")
     df["Original Multiple"] = np.where(df["productpart"] == "tp_notepad",  df["Multiple"].astype("float16"), np.where("pages factor" == 2, df["Multiple"] ,1))  # TODO: Check later
-    df["Ganging"] = df["GangingQuantity"] == 1
+    df["Ganging"] = df["GangingQuantity"] == 1  # FIX: To updated later
     df["Plates"] = np.where(df["Workstyle"].isin(["Simplex", "Sheetwise"]), df["Front_colour"] + df["Back_colour"], (df["Front_colour"]+df["Back_colour"])/2)
     df["Original Plates"] = df["Plates"]
     df["Plates"] = np.where(df["OverPrintB"], df["Plates"] + df["Multiple"] - 1, df["Plates"])
@@ -60,6 +65,8 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Plates"] = df["Plates"].astype("uint16")
     df["Overs"] = df["Plates"] * 50
     df["Overs"] = df["Overs"].astype("uint16")
+
+    # NOTE: Loading inputs
 
     litho_utilization = get_litho_utilization()
     df = df.merge(litho_utilization, "left", on=["Paper", "Sheet Size"])
@@ -75,6 +82,17 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     litho_additional = litho_additional.drop("Attribute", axis=1)
     df = pd.merge(df, litho_additional, "left", on=["Supplier", "Machine_size"])
     del litho_additional
+
+    # NOTE: Ganging refactoring
+    ganging_check = df["Ganging"].sum()
+    if ganging_check > 0:
+        # df = ganging_calculation(df)
+        pass
+    else:
+        # df["Ganging Total"] = None  # CHECK: See whether to add the column or based on the condititon ignore the check of minuimum
+        pass
+
+    # NOTE: Ganging Calculation
 
     df["Ganging Possible"] = (df["Ganging"]) & (df["Placements"] >= 2) & (
        df["Quantity"] <= 10000)
