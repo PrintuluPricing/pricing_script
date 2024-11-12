@@ -22,7 +22,7 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
-    df["Placements"] / df["Ganging Utilization"]  # CHECK: NEED to check the calculation for brackets
+        df["Placements"] / df["Ganging Utilization"]
     df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
     df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
@@ -151,7 +151,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
     df = df.reset_index(drop=True)
 
-    #CHECK: Refinement, finishing and Extra weights
+    # CHECK: Refinement, finishing and Extra weights
 
     df = calculate_shipping(df)
     if bindings > 0:
