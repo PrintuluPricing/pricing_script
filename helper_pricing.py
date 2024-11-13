@@ -58,8 +58,18 @@ def get_dimensions(size: str) -> tuple[float, float]:
         height, width = re.findall(r"(\d*\.?\d+)\s?x\s?(\d*\.?\d+)", size)[0]
     except:
         height, width = 1, 1
-    height = float(height)
-    width = float(width)
+    height1 = float(height)
+    width1 = float(width)
+    # NOTE:
+    # portrait height > width
+    # landscape width > height
+    height, width = height1, width1
+    if "l" in size:
+        height = min(height1, width1)
+        width = max(height1, width1)
+    if "p" in size:
+        height = max(height1, width1)
+        width = min(height1, width1)
     cached_data["dimensions"][size] = (height, width)
     return height, width
 
