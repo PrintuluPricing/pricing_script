@@ -63,13 +63,14 @@ def get_dimensions(size: str) -> tuple[float, float]:
     # NOTE:
     # portrait height > width
     # landscape width > height
+    # Potrait vs landscape => Height or width gets multiplied by 2 for open size
     height, width = height1, width1
     if "l" in size:
         height = min(height1, width1)
-        width = max(height1, width1)
+        width = max(height1, width1) * 2
     if "p" in size:
         height = max(height1, width1)
-        width = min(height1, width1)
+        width = min(height1, width1) * 2
     cached_data["dimensions"][size] = (height, width)
     return height, width
 
