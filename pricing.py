@@ -11,9 +11,37 @@ import gifts
 import custom
 from datetime import datetime
 import numpy as np
+from flask import Flask, request
 
 warnings.simplefilter(action="ignore")
 
+app = Flask(__name__)
+
+# CHECK: Remove this function later -- TESTING ONLY
+def print_pandas(file):
+    data = pd.read_csv(file)
+    print(data)
+
+# NOTE: Flask starts here
+
+@app.route("/")
+def hello():
+    return "<p>Hello</p>"
+
+
+# TODO: Add option to download the data after finshing the script
+@app.route("/upload", methods=["GET", "POST"])
+def upload_data():
+    if request.method == "POST":
+        print(request)
+        print(request.files)
+        f = request.files["file"]
+        print_pandas(f)
+        return "file has been received"
+
+
+
+# NOTE: Flask ends here
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
 
