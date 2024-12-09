@@ -23,13 +23,13 @@ colour = ";".join(list(set(data["Colour"])))
 category = ";".join(list(set(data["Category"])))
 sheets = ";".join(list(set(data["Sheets"])))
 ganging = ";".join([str(q).replace(".0","") for q in list(set(data["GangingQuantity"]))])
-print(ganging)
-print(bool(int(ganging)))
 
 
 
 # TODO: Markups
 
+# TODO: Check how to have multiple options for different combinations and if will need to change the structure
+# Example -> Different markups based on quantities
 
 exit()
 for file in combinations:
