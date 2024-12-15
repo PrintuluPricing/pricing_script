@@ -38,8 +38,6 @@ def get_placements(format: str, size: str, category: str) -> int | float:
     if category == "LF Digital":
         return (100 / x * 100 / y)
     [height, width] = get_dimensions(size)
-    # height -= categories_space[category]["height"]
-    # width -= categories_space[category]["width"]
     height -= categories_space[category]["width"]
     width -= categories_space[category]["height"]
     placements1 = int(height/x) * int(width / y)
@@ -105,7 +103,7 @@ def get_nth_value(x: str, delim: str, n: int) -> str:
     return x.split(delim)[n]
 
 
-def calculate_attributes(df: pd.DataFrame)-> pd.DataFrame:
+def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     finishing = get_finishing_costs()
     df = df.reset_index(drop=True)
     print("Calculating Attributes: ", len(df))
@@ -182,9 +180,9 @@ def get_finishing_costs()-> pd.DataFrame:
     finishing["Setup-Cost"] = pd.to_numeric(finishing["Setup-Cost"],errors="coerce")
     finishing["Setup-Cost"] = finishing["Setup-Cost"].fillna(0).astype("float32")
     finishing["value"] = finishing["value"].str.replace(".*\+","",regex=True)
-    finishing["/1000"] = finishing["value"].str.extract("(/\s?1000)")
-    finishing["/1000"] = finishing["value"].str.contains("(/\s?1000)")
-    finishing["value"] = finishing["value"].str.replace("(/\s?1000)","",regex=True)
+    finishing["/1000"] = finishing["value"].str.extract("(\/\s?1000)")
+    finishing["/1000"] = finishing["value"].str.contains("(\/\s?1000)")
+    finishing["value"] = finishing["value"].str.replace("(\/\s?1000)","",regex=True)
     finishing["value"] = pd.to_numeric(finishing["value"], errors="coerce")
     finishing["value"] = np.where(finishing["/1000"], finishing["value"] / 1000 , finishing["value"])
     finishing["value"] = finishing["value"].astype("float32")
