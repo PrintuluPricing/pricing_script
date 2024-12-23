@@ -11,7 +11,8 @@ import gifts
 import custom
 from datetime import datetime
 import numpy as np
-from flask import Flask, request
+from flask import Flask, request, send_file
+import io
 
 warnings.simplefilter(action="ignore")
 
@@ -29,6 +30,9 @@ def hello():
     return "<p>Hello</p>"
 
 
+# TODO: Removed Later
+
+
 # TODO: Add option to download the data after finshing the script
 @app.route("/upload", methods=["GET", "POST"])
 def upload_data():
@@ -36,8 +40,11 @@ def upload_data():
         print(request)
         print(request.files)
         f = request.files["file"]
-        print_pandas(f)
-        return "file has been received"
+        f.save("received_file.csv")
+        print_pandas("received_file.csv")
+        with open("received_file.csv","rb") as f:
+            buffer = io.BytesIO(f.read())
+            return send_file(buffer, as_attachment=True, download_name="response.csv")  # CHECK: Still need to check which way to return // Probably will return JSON
 
 
 
