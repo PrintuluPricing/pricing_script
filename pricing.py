@@ -203,7 +203,7 @@ def main(files: list[str]) -> pd.DataFrame | None:
 # Advertisement
 # Promotion
 # Mask
-# Readd eliptical standee calculation
+# Read eliptical standee calculation
 
 
 if __name__ == "__main__":
