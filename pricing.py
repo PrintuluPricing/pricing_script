@@ -11,9 +11,44 @@ import gifts
 import custom
 from datetime import datetime
 import numpy as np
+from flask import Flask, request, send_file
+import io
 
 warnings.simplefilter(action="ignore")
 
+app = Flask(__name__)
+
+# CHECK: Remove this function later -- TESTING ONLY
+def print_pandas(file):
+    data = pd.read_csv(file)
+    print(data)
+
+# NOTE: Flask starts here
+
+@app.route("/")
+def hello():
+    return "<p>Hello</p>"
+
+
+# TODO: Removed Later
+
+
+# TODO: Add option to download the data after finshing the script
+@app.route("/upload", methods=["GET", "POST"])
+def upload_data():
+    if request.method == "POST":
+        print(request)
+        print(request.files)
+        f = request.files["file"]
+        f.save("received_file.csv")
+        print_pandas("received_file.csv")
+        with open("received_file.csv","rb") as f:
+            buffer = io.BytesIO(f.read())
+            return send_file(buffer, as_attachment=True, download_name="response.csv")  # CHECK: Still need to check which way to return // Probably will return JSON
+
+
+
+# NOTE: Flask ends here
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
 
