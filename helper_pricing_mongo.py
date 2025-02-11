@@ -130,7 +130,55 @@ def get_litho_machines() -> pd.DataFrame:
     return litho_machines
 
 
+def get_paper_costs()-> pd.DataFrame:
+    if "paper" in cached_data.keys():
+        return cached_data["paper"]
+    paper_collection = db["paper_prices"]
+    paper_prices = pd.DataFrame(list(paper_collection.find()))
+    paper_prices = paper_prices.drop(["_id"], axis=1)
+    paper_prices = paper_prices[["paper", "price", "sheet_size"]]
+    paper_prices = paper_prices.rename({"paper": "Paper", "price": "Paper Costs"}, axis=1)
+    paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
+    cached_data["paper"] = paper_prices
+    print(paper_prices)
+    return paper_prices
+
+
+def get_lf_mahcines() -> pd.DataFrame:
+    if "lf_machines" in cached_data.keys():
+        return cached_data["lf_machines"]
+    lf_machines_collection = db["lf_machines_prices"]
+    lf_machines = pd.DataFrame(list(lf_machines_collection.find()))
+    lf_machines = lf_machines.drop(["_id"], axis=1)
+    print(lf_machines.columns)
+    lf_machines = lf_machines.drop("attribute", axis=1)
+    lf_machines = lf_machines.rename({"colour": "colors", "price": "Printing Rate"}, axis=1)
+    lf_machines = lf_machines[lf_machines["supplier"].isin(REMOVED_SUPPLIERS) == False]
+    lf_machines[["Supplier", "colors", "Machine"]] = lf_machines[["supplier", "colors", "machine"]].astype("category")
+    lf_machines["Printing Rate"] = lf_machines["Printing Rate"].astype("float16")
+    cached_data["lf_machines"] = lf_machines
+    return lf_machines
+
+
+def get_lf_material() -> pd.DataFrame:
+    if "lf_material" in cached_data.keys():
+        return cached_data["lf_material"]
+    lf_material_collection = dfb["lf_material_prices"]
+    lf_material = pd.DataFrame(list(lf_material_collection.find()))
+    lf_material = lf_material.drop(["_id"], axis=1)
+    print(lf_material)
+    exit()
+    lf_material = pd.melt(lf_material, ["Attribute","GSM"], var_name="Supplier")
+    lf_material = lf_material[lf_material["value"] != ""]
+    lf_material["value"] = pd.to_numeric(lf_material["value"]).astype("float16")
+    lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
+    lf_material = lf_material.rename({"value": "LF Material", "Attribute": "Paper"}, axis=1)
+    lf_material = lf_material[lf_material["Supplier"].isin(REMOVED_SUPPLIERS) == False]
+    lf_material[["Supplier", "Paper"]] = lf_material[["Supplier", "Paper"]].astype("category")
+    cached_data["lf_material"] = lf_material
+    return lf_material
+
+
 if __name__ == "__main__":
     pass
-    litho = get_litho_machines()
-    print(litho["fixed_price"])
+    get_lf_material()

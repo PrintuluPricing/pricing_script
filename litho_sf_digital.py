@@ -41,21 +41,21 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     # FIX: Check why SF Digital takes sheet size for 51 x 71
     # REMOVE Additional Sheet Sizeee!!!!
     # df["Sheet Size"] = ";".join(categories_sizes["Litho"] + categories_sizes["SF Digital"])
-    df["Sheet Size"] = df["Category"].map(categories_sizes)
-    df["Sheet Size"] = df["Sheet Size"].str.split(";")
-    df = df.explode("Sheet Size")
-    df["Sheet Size"] = df["Sheet Size"].astype('category')
+    df["sheet_size"] = df["Category"].map(categories_sizes)
+    df["sheet_size"] = df["sheet_size"].str.split(";")
+    df = df.explode("sheet_size")
+    df["sheet_size"] = df["sheet_size"].astype('category')
     print("SQM Calculation")
-    df["SQM"] = df["Sheet Size"].apply(get_litho_sf_SQM).astype('float32')
+    df["SQM"] = df["sheet_size"].apply(get_litho_sf_SQM).astype('float32')
     print("Machine Calculation")
-    df["Machine_size"] = df["Sheet Size"].map(machine_sizes)
-    df["Machine_size"] = df["Machine_size"].astype('category')
+    df["machine"] = df["sheet_size"].map(machine_sizes)
+    df["machine"] = df["machine"].astype('category')
     # Litho Calculations
     # NOTE: Check whether to select sheetwise vs other workstyle and which to take by default
     df["Workstyle"] = np.where(df["colors"].str[-1] == "0","Simplex","Sheetwise")
     df["Workstyle"] = df["Workstyle"].astype('category')
-    df["Front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype('uint8')
-    df["Back_colour"] = df["colors"].str[-1].astype('uint8')
+    df["front_colour"] = df["colors"].str.extract(r"colour_(\d)\d").astype('uint8')
+    df["back_colour"] = df["colors"].str[-1].astype('uint8')
     # Calculating Placements
     print("Placements Calculation")
     df["Placements"] = df.apply(lambda x: get_placements(x["Format"], x["Sheet Size"], x["Category"]), axis=1).astype('uint16')
@@ -68,7 +68,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     # FIX: Calculate leaves and sheets based on pages / sheets / 2 if pages
     df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]/ df["pages factor"] ).astype('uint16')
     paper_prices = get_paper_costs()
-    df = pd.merge(df, paper_prices, "left", on=["Paper", "Sheet Size"])
+    df = pd.merge(df, paper_prices, "left", on=["Paper", "sheet_size"])
     del paper_prices
     df["Original Paper Costs"]= df["Paper Costs"].astype("float16")
     return df
