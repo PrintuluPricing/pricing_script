@@ -195,7 +195,7 @@ def get_additional()-> tuple[pd.DataFrame, pd.DataFrame]:
     if "additional" in cached_data.keys():
         print("Loading Data from cached")
         return cached_data["additional"]
-    additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "Fixed Price")
+    additional_prices = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "fixed_price")
     additional_prices = pd.melt(additional_prices, var_name="Supplier", id_vars="Attribute")
     additional_prices = additional_prices[additional_prices["value"] != ""]
     additional_prices["value"] = additional_prices["value"].astype(float)
@@ -473,4 +473,6 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    prices = get_litho_machines()
+    print(prices.columns)
     pass

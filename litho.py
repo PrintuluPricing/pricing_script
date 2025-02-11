@@ -21,9 +21,9 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"] / df["pages factor"]
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
-    df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
+    df["Ganging Setup Cost"] = (df["setup_time"] * df["Plates"] / 60 * df["cost_per_hour"] + df["Total Ganging Sheets"] / df["sheet_per_hour"] * df["cost_per_hour"]) / \
         df["Placements"] / df["Ganging Utilization"]
-    df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Plates Cost"] = df["Plates"] * df["plates_cost"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
     df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
     df["Ganging Additional"] = df["Additional"] / df["Placements"] / df["Ganging Utilization"]
@@ -71,16 +71,18 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     litho_utilization = get_litho_utilization()
     df = df.merge(litho_utilization, "left", on=["Paper", "Sheet Size"])
     litho_machines = get_litho_machines()
-    df = pd.merge(df,litho_machines,"left",on="Machine_size")
-    df = df[df["Plates Costs"].isna() == False]
-    df[["Sheet Size", "Paper", "Machine_size"]]
+    df = pd.merge(df,litho_machines,"left",on="machine")
+
+    # CHECK: if the condition is still needed
+    df = df[df["plates_cost"].isna() == False]
+    df[["Sheet Size", "Paper", "machine"]]
 
     additional_prices, markup = get_additional()
     litho_additional = additional_prices[additional_prices["Attribute"].str.contains("Litho")].reset_index(drop=True)
-    litho_additional = pd.merge(litho_additional, markup, "left", on="Supplier")
+    litho_additional = pd.merge(litho_additional, markup, "left", on="supplier")
     litho_additional = litho_additional.rename({"value": "Additional"}, axis=1)
     litho_additional = litho_additional.drop("Attribute", axis=1)
-    df = pd.merge(df, litho_additional, "left", on=["Supplier", "Machine_size"])
+    df = pd.merge(df, litho_additional, "left", on=["supplier", "machine"])
     del litho_additional
 
     # NOTE: Ganging refactoring
@@ -99,12 +101,12 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]
     df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["Ganging Utilization"]
-    df["Ganging Setup Cost"] = (df["Setup Time"] * df["Plates"] / 60 * df["Cost"] + df["Total Ganging Sheets"] / df["Sheets / Hour"] * df["Cost"]) / \
+    df["Ganging Setup Cost"] = (df["setup_time"] * df["Plates"] / 60 * df["cost_per_hour"] + df["Total Ganging Sheets"] / df["sheet_per_hour"] * df["cost_per_hour"]) / \
     df["Placements"] / df["Ganging Utilization"]
-    df["Ganging Plates Cost"] = df["Plates"] * df["Plates Costs"] / df["Placements"] / df["Ganging Utilization"]
+    df["Ganging Plates Cost"] = df["Plates"] * df["plates_cost"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Litho Costs"] = df["Ganging Setup Cost"] + df["Ganging Plates Cost"]
     df["Ganging Printing and Paper Costs"] = df["Ganging Litho Costs"] + df["Ganging Paper Costs"]
-    df["Ganging Printing Markup"] = df["Ganging Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100)
+    df["Ganging Printing Markup"] = df["Ganging Printing and Paper Costs"] * (1 + df["supplier Markup"] /100)
     df["Ganging Additional"] = df["Additional"] / df["Placements"] / df["Ganging Utilization"]
     df["Ganging Total"] = df["Ganging Printing Markup"] + df["Ganging Additional"]
 
@@ -115,19 +117,19 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"] * df["Multiple"]
     #NOTE: Normal Calculation
 
-    df = df[df["Plates Costs"].isna() == False]
+    df = df[df["plates_cost"].isna() == False]
     df = df.reset_index(drop=True)
-    df["Setup Time(hour)"] = df["Plates"] * df["Setup Time"] / 60 # CHECK: For same design setup is done once # * df["Original Multiple"]
+    df["Setup Time(hour)"] = df["Plates"] * df["setup_time"] / 60 # CHECK: For same design setup is done once # * df["Original Multiple"]
     df["Setup Time(hour)"] = df["Setup Time(hour)"] * np.where((df["OverPrintB"]) | (df["OverPrintFC"]), df["Multiple"], 1 )
-    df["Sheets Worked"] = df["Total Sheets"] / df["Sheets / Hour"]
-    df["Setup Cost"] = df["Setup Time(hour)"] * df["Cost"] + df["Sheets Worked"] * df["Cost"]
-    df["Plates Cost"] = df["Plates"] * df["Plates Costs"] * df["Original Multiple"]
+    df["Sheets Worked"] = df["Total Sheets"] / df["sheet_per_hour"]
+    df["Setup Cost"] = df["Setup Time(hour)"] * df["cost_per_hour"] + df["Sheets Worked"] * df["cost_per_hour"]
+    df["Plates Cost"] = df["Plates"] * df["plates_cost"] * df["Original Multiple"]
     df["Litho Costs"] = df["Setup Cost"] + df["Plates Cost"]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]
     df["Printing and Paper Costs"] = np.where((df["colors"] == "colour_00") | (df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
     df["Printing and Paper incl Markup"] = np.where((df["colors"] == "colour_00") | (df["pages"] == "sheets_0"),df["Paper Costs"], df["Litho Costs"] + df["Paper Costs"])
     df["Additional"] = df["Additional"] * df["Original Multiple"]
-    df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["Supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
+    df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["supplier Markup"] / 100) + df["Additional"] * df["Multiple"]
 
     df["Printing and Paper incl Markup"] = np.where(df["Ganging"] & df["Ganging Possible"], np.min(df[["Printing and Paper incl Markup", "Ganging Total"]] , axis=1),df["Printing and Paper incl Markup"])
     df = df[df["Printing and Paper incl Markup"].isna() == False]
@@ -166,7 +168,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Supplier"])
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "supplier"])
     df = df.reset_index(drop=True)
 
     # CHECK: Refinement, finishing and Extra weights
@@ -183,7 +185,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
     df = df[df["Total Costs"].isna() == False]
     df = df.sort_values("Total Costs", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "supplier", "Quantity"])
     df = df.reset_index(drop=True)
 
     return df
