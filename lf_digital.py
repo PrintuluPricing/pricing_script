@@ -14,7 +14,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
     lf_printing_rates = get_lf_mahcines()[["Supplier", "Machine", "colour", "Printing Rate"]]
     df = df.merge(lf_printing_rates, "left", on="colors")
-    # df[["Supplier", "Printing Rate", "Machine"]] = lf_printing_rates[["Supplier", "Printing Rate", "Machine"]]
     df["SQM"] = df["format"].apply(get_lf_SQM).astype('float32')
     df["SQM"] = df["Quantity"]/ df["SQM"]  # FIX: Check the integer ouptut
     lf_waste = get_lf_waste()

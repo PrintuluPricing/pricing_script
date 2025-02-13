@@ -166,14 +166,14 @@ def get_lf_material() -> pd.DataFrame:
     lf_material_collection = db["lf_material_prices"]
     lf_material = pd.DataFrame(list(lf_material_collection.find()))
     lf_material = lf_material.drop(["_id"], axis=1)
-    lf_material = lf_material.rename({"gsm":"GSM"}, axis=1)
+    lf_material = lf_material.rename({"gsm": "GSM"}, axis=1)
     lf_material["price"] = pd.to_numeric(lf_material["price"]).astype("float16")
     lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
-    lf_material = lf_material.rename({"price": "LF Material", "paper": "Paper"}, axis=1)
+    lf_material["cutting"] = pd.to_numeric(lf_material["cutting"]).astype("float16")
+    lf_material = lf_material.rename({"price": "LF Material", "paper": "Paper", "waste": "Waste %", "cutting": "LF Cutting"}, axis=1)
     lf_material = lf_material[lf_material["supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_material[["supplier", "Paper"]] = lf_material[["supplier", "Paper"]].astype("category")
     cached_data["lf_material"] = lf_material
-    print(lf_material["waste"])
     return lf_material
 
 
@@ -188,7 +188,6 @@ def get_lf_extra() -> pd.DataFrame:
     lf_extra = lf_extra[lf_extra["supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_extra[["supplier", "Extra"]] = lf_extra[["supplier", "Extra"]].astype("category")
     cached_data["lf_extra"] = lf_extra
-    print(lf_extra)
     return lf_extra
 
 
@@ -208,4 +207,3 @@ def get_lf_refinement() -> pd.DataFrame:
 
 if __name__ == "__main__":
     pass
-    get_lf_material()

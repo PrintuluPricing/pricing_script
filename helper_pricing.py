@@ -285,6 +285,7 @@ def get_lf_waste() -> pd.DataFrame:
     cached_data["lf_waste"] = lf_waste
     return lf_waste
 
+
 def get_lf_double() -> list[str]:
     if "lf_double" in cached_data.keys():
         return cached_data["lf_double"]
