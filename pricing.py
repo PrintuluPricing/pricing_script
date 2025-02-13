@@ -11,44 +11,9 @@ import gifts
 import custom
 from datetime import datetime
 import numpy as np
-from flask import Flask, request, send_file
-import io
 
 warnings.simplefilter(action="ignore")
 
-app = Flask(__name__)
-
-# CHECK: Remove this function later -- TESTING ONLY
-def print_pandas(file):
-    data = pd.read_csv(file)
-    print(data)
-
-# NOTE: Flask starts here
-
-@app.route("/")
-def hello():
-    return "<p>Hello</p>"
-
-
-# TODO: Removed Later
-
-
-# TODO: Add option to download the data after finshing the script
-@app.route("/upload", methods=["GET", "POST"])
-def upload_data():
-    if request.method == "POST":
-        print(request)
-        print(request.files)
-        f = request.files["file"]
-        f.save("received_file.csv")
-        print_pandas("received_file.csv")
-        with open("received_file.csv","rb") as f:
-            buffer = io.BytesIO(f.read())
-            return send_file(buffer, as_attachment=True, download_name="response.csv")  # CHECK: Still need to check which way to return // Probably will return JSON
-
-
-
-# NOTE: Flask ends here
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 2000)
 
@@ -58,27 +23,33 @@ def loading_options() -> list[str]:
     files = args[1:]
     return files
 
+
 def return_first(args):
     return args[0]
-
 
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 def main(files: list[str]) -> pd.DataFrame | None:
     print(timestamp)
     print(files)
-    data_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
+    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
+
+    # FIXME: Check the consistent column names later
+    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra']
 
     file_name = files[0].replace("/", "_")
 
     columns = ["productpart", "paper", "format", "pages", "Quantity",
                "colors", "book_binding", "refinement", "finishing", "options", "file_type"]
     data = pd.concat(pd.read_csv(file, keep_default_na=False) for file in files)
-    data = data[data_columns]
-    cat_columns = ['Category', 'Product', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options',
+    print(data.columns)
+    cat_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options',
                   'SuperCategory', 'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Sheets', 'Extra']
 
-    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'GangingQuantity']# 'Quantity']
+    # FIXME: Check the consistent column names later
+    cat_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra',
+                   'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Pages', 'Extra']
+    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup']
 
     start = datetime.now()
     with open(f"log_{timestamp}.txt", "a") as f:
@@ -89,21 +60,21 @@ def main(files: list[str]) -> pd.DataFrame | None:
     data[num_columns] = data[num_columns].astype('uint8')
     data["Quantity"] = data["Quantity"].astype('uint32')
     print(f"Casting took {datetime.now() - start}")
-    products = list(set(list(data["Product"])))
+    products = list(set(list(data["Product Code"])))
     data = data.rename({"Product": "productpart"}, axis=1)
 
     print(len(data))
     print("Removing Duplicates")
-    data = data.drop_duplicates(["Category","productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    unique = data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"]).reset_index(drop=True)
-    unique = unique[["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"]]
+    data = data.drop_duplicates(["Category","Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
+    unique = data.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]).reset_index(drop=True)
+    unique = unique[["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]]
     unique = unique.reset_index(drop=True)
     unique = unique.reset_index()
     unique = unique.rename({"index":"idx"}, axis=1)
     unique_combinations = len(unique)
     data = data.rename({"index":"idx"}, axis=1)
     data = data.reset_index(drop=True)
-    data = data.merge(unique, "left", on=["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
+    data = data.merge(unique, "left", on=["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
     del unique
     print("Removed Duplicates")
 
@@ -227,18 +198,7 @@ def main(files: list[str]) -> pd.DataFrame | None:
     final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
     final_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
-
     return output_data
-
-# TODO: Include LF Extra in the same data as finishing
-# TODO: Custom Products - Custom Products Sheet
-# Pop
-# Card
-# Display
-# Advertisement
-# Promotion
-# Mask
-# Read eliptical standee calculation
 
 
 if __name__ == "__main__":

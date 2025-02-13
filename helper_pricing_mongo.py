@@ -173,6 +173,7 @@ def get_lf_material() -> pd.DataFrame:
     lf_material = lf_material[lf_material["supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_material[["supplier", "Paper"]] = lf_material[["supplier", "Paper"]].astype("category")
     cached_data["lf_material"] = lf_material
+    print(lf_material["waste"])
     return lf_material
 
 
@@ -207,4 +208,4 @@ def get_lf_refinement() -> pd.DataFrame:
 
 if __name__ == "__main__":
     pass
-    get_lf_refinement()
+    get_lf_material()

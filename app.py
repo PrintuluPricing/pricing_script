@@ -6,6 +6,8 @@ import json
 import os
 import logging
 from dotenv import load_dotenv
+from combine import create_combinations
+from pricing import main
 
 
 load_dotenv()
@@ -67,74 +69,12 @@ def connect_db():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/attributes', methods=['GET'])
-def get_attributes():
-    try:
-        attr_type = request.args.get('type')
-        query = {}
-
-        # Handle type-specific queries
-        if attr_type:
-            # Case-insensitive search for type
-            query['type'] = {'$regex': f'^{attr_type}$', '$options': 'i'}
-            logger.debug(f"Searching for type: {attr_type}")
-
-        logger.debug(f"Final query: {query}")
-
-        # Get attributes and sort them
-        attributes = list(db.attributes.find(query).sort('name', 1))
-        logger.debug(f"Found {len(attributes)} attributes")
-
-        # Log the first few attributes for debugging
-        if attributes:
-            logger.debug(f"Sample attributes: {attributes[:2]}")
-
-        return jsonify(parse_json(attributes))
-    except Exception as e:
-        logger.error(f"Error fetching attributes: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/attributes/by-category', methods=['POST'])
-def get_attributes_by_category():
-    try:
-        data = request.json
-        logger.debug(f"Received request data: {data}")
-
-        attr_type = data.get('type')
-        categories = data.get('categories', [])
-
-        # Build the query
-        query = {}
-
-        # Add type filter (case-insensitive)
-        if attr_type:
-            query['type'] = {'$regex': f'^{attr_type}$', '$options': 'i'}
-
-        # Add categories filter - only return attributes where ALL selected categories match
-        if categories:
-            # Use $all instead of $in to ensure ALL categories must match
-            query['categories'] = {'$all': categories}
-
-        logger.debug(f"MongoDB Query: {query}")
-
-        # Get attributes and sort them
-        attributes = list(db.attributes.find(query).sort('name', 1))
-        logger.debug(f"Found {len(attributes)} attributes")
-
-        if len(attributes) == 0:
-            logger.debug(
-                f"No attributes found for type {attr_type} and categories {categories}")
-        else:
-            # Log each attribute and its categories for debugging
-            for attr in attributes:
-                logger.debug(
-                    f"Found attribute: {attr.get('name')} with categories: {attr.get('categories', [])}")
-
-        return jsonify(parse_json(attributes))
-    except Exception as e:
-        logger.error(f"Error fetching attributes by category: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/combine/<code>', methods=['POST'])
+def get_attributes_by_category(code):
+    combinations = create_combinations(code)
+    combinations.to_csv(f"{code}_combinations.csv", index=False)
+    main([f"{code}_combinations.csv"])
+    return combinations.to_json(orient='records')
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement, get_finishing_costs
+# from helper_pricing import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement, get_finishing_costs
+from helper_pricing_mongo import get_lf_cutting, get_lf_double, get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_waste, get_weights, get_shipping_costs, get_lf_SQM, get_lf_refinement, get_finishing_costs
 from shipping import calculate_shipping
 
 # NOTE: Constants
@@ -11,7 +12,7 @@ FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
-    lf_printing_rates = get_lf_mahcines()[["Supplier", "Machine", "colors", "Printing Rate"]]
+    lf_printing_rates = get_lf_mahcines()[["Supplier", "Machine", "colour", "Printing Rate"]]
     df = df.merge(lf_printing_rates, "left", on="colors")
     # df[["Supplier", "Printing Rate", "Machine"]] = lf_printing_rates[["Supplier", "Printing Rate", "Machine"]]
     df["SQM"] = df["format"].apply(get_lf_SQM).astype('float32')
