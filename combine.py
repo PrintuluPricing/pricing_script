@@ -19,7 +19,7 @@ attributes = attributes.drop(["_id", "categories"], axis=1)
 
 
 df_cols = ['Product Name', 'Product Code', 'Category', 'Pages', 'Finishing', 'Binding', 'Extra', 'Format', 'Quantity',
-           'Refinement', 'Colour', 'Paper', 'Printing Markup', 'Finishing Markup', 'Binding Markup', 'Option Markup', 'Refinement Markup']
+           'Refinement', 'Colour', 'Paper', 'Ganging Possible', 'Printing Markup', 'Finishing Markup', 'Binding Markup', 'Option Markup', 'Refinement Markup']
 attributes_cols = ['Pages', 'Finishing', 'Binding', 'Extra',
                    'Format', 'Refinement', 'Colour', 'Paper']
 
@@ -43,6 +43,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     product_df["Refinement Markup"] = refinement_markup
     product_df["Product Code"] = product_code
     product_df["Product Name"] = product_data["product_name"]
+    product_df["Ganging Possible"] = product_data["ganging_possible"]
     return product_df
 
 
@@ -64,5 +65,4 @@ def create_combinations(product_code):
 
 
 if __name__ == '__main__':
-    create_combinations("tp_parasol_umbrella").to_csv("tp_parasol_umbrella_combinations.csv", index=False)
     pass
