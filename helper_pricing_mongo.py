@@ -152,9 +152,9 @@ def get_lf_mahcines() -> pd.DataFrame:
     lf_machines = lf_machines.drop(["_id"], axis=1)
     print(lf_machines.columns)
     lf_machines = lf_machines.drop("attribute", axis=1)
-    lf_machines = lf_machines.rename({"colour": "colors", "price": "Printing Rate"}, axis=1)
+    lf_machines = lf_machines.rename({"price": "Printing Rate"}, axis=1)
     lf_machines = lf_machines[lf_machines["supplier"].isin(REMOVED_SUPPLIERS) == False]
-    lf_machines[["Supplier", "colors", "Machine"]] = lf_machines[["supplier", "colors", "machine"]].astype("category")
+    lf_machines[["supplier", "colour", "machine"]] = lf_machines[["supplier", "colour", "machine"]].astype("category")
     lf_machines["Printing Rate"] = lf_machines["Printing Rate"].astype("float16")
     cached_data["lf_machines"] = lf_machines
     return lf_machines
@@ -207,3 +207,4 @@ def get_lf_refinement() -> pd.DataFrame:
 
 if __name__ == "__main__":
     pass
+    get_lf_mahcines()

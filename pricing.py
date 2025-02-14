@@ -179,7 +179,10 @@ def main(files: list[str]) -> pd.DataFrame | None:
     output_data = output_data.merge(cheapest,"inner",on=["idx","Category"])
     del cheapest
 
-    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+
+    output_data = output_data.rename({"Product Code":"productpart", "colour":"colors", "binding":"book_binding", "extra": "options"}, axis=1)
+
+    output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "supplier", "Quantity"])
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
