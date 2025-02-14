@@ -207,7 +207,6 @@ def get_weights() -> pd.DataFrame:
     if "weights" in cached_data.keys():
         return cached_data["weights"]
     collection = db["attributes"]
-    print(collection)
     weights = pd.DataFrame(list(collection.find()))
     weights = weights.drop(["_id", "code", "categories"], axis=1)
     weights = weights.rename({"name": "Attribute", "type": "Type"}, axis=1)
@@ -243,5 +242,108 @@ def get_litho_utilization()-> pd.DataFrame:
     return litho_utilization
 
 
+def get_finishing() -> pd.DataFrame:
+    if "finishing" in cached_data.keys():
+        return cached_data["finishing"]
+    collection = db["finishing_prices"]
+    finishing = pd.DataFrame(list(collection.find()))
+    finishing = finishing.drop("_id", axis=1)
+    cached_data["finishing"] = finishing
+    return finishing
+
+
+def get_extra() -> pd.DataFrame:
+    if "extra" in cached_data.keys():
+        return cached_data["extra"]
+    collection = db["extra_prices"]
+    extra = pd.DataFrame(list(collection.find()))
+    extra = extra.drop("_id", axis=1)
+    cached_data["extra"] = extra
+    return extra
+
+
+def get_binding() -> pd.DataFrame:
+    if "binding" in cached_data.keys():
+        return cached_data["binding"]
+    collection = db["binding_prices"]
+    binding = pd.DataFrame(list(collection.find()))
+    binding = binding.drop("_id", axis=1)
+    cached_data["binding"] = binding
+    return binding
+
+
+def get_refinement() -> pd.DataFrame:
+    if "refinement" in cached_data.keys():
+        return cached_data["refinement"]
+    collection = db["refinement_prices"]
+    refinement = pd.DataFrame(list(collection.find()))
+    refinement = refinement.drop("_id", axis=1)
+    refinement["price"] = refinement["price"].astype("float16")
+    refinement = refinement.rename({"refinement": "Refinement", "price": "Refinement_costs"}, axis=1)
+    cached_data["refinement"] = refinement
+    return refinement
+
+
+def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
+    finishing, refinement, binding, extra = get_finishing(), get_refinement(), get_binding(), get_extra()
+    # Index(['supplier', 'attribute', 'attribute_code', 'price', 'setup'], dtype='object')
+
+    df = df.reset_index(drop=True)
+
+    print("Calculating Attributes: ", len(df))
+
+    # FINISHING COSTS
+    print("Finishing")
+
+    finishing_costs = pd.merge(df[["supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["supplier", "Finishing"], right_on=["supplier", "attribute"])
+    finishing_costs["Finishing_costs"] = finishing_costs["setup"].fillna(0) +np.where(finishing_costs["price"] > 0,FIXED_FINISHING_HANDLING, 0)  + np.where(finishing_costs["calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["price"], finishing_costs["Total Sheets"] * finishing_costs["price"])
+    finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
+
+    print("Extra")
+    # Extra Costs
+    extra_costs = pd.merge(df[["supplier", "Quantity", "Extra", "Total Sheets"]],extra , "left", left_on=["supplier", "Extra"], right_on=["supplier", "attribute"])
+    # NOTE: Check later which cases that apply to: Drilling, holes, should be applied as minimum handling fees
+
+    extra_costs["Extra_costs"] = extra_costs["setup"].fillna(0) + np.where(extra_costs["price"] > 0,FIXED_EXTRA_HANDLING, 0) + np.where(extra_costs["calculation"] == "PI", extra_costs["Quantity"] * extra_costs["price"], extra_costs["Total Sheets"] * extra_costs["price"])
+    extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
+
+    print("Binding")
+    # Binding Costs
+
+    binding_costs = pd.merge(df[["supplier", "Quantity", "Binding", "Total Sheets"]],binding , "left", left_on=["supplier", "Binding"], right_on=["supplier", "attribute"])
+    binding_costs["Binding_costs"] = binding_costs["setup"].fillna(0) + np.where(binding_costs["calculation"] == "PI", binding_costs["Quantity"] * binding_costs["price"], binding_costs["Total Sheets"] *binding_costs["price"])
+    binding_costs["Binding_costs"] = np.where(binding_costs["Binding"] == "None", 0, binding_costs["Binding_costs"])
+
+    df["Finishing_costs"] = finishing_costs["Finishing_costs"]
+    df["Binding_costs"] = np.where(df["Binding_costs"]> 0, df["Binding_costs"], binding_costs["Binding_costs"])
+    df["Extra_costs"] = extra_costs["Extra_costs"]
+
+    del (finishing_costs)
+    del (binding_costs)
+    del (extra_costs)
+
+    print("Refinement")
+    # Refinement Costs
+
+    df = df.reset_index(drop=True)
+    df = pd.merge(df, refinement, "left", on=["supplier", "Refinement"])
+    df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
+    df["Refinement_costs"] = np.where(df["Refinement_costs"]> 0, df["Refinement_costs"] + FIXED_REFINEMENT_HANDLING, 0)
+    df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
+
+    df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
+    df["Extra Costs"] = df["Extra_costs"] * (1 + df["Option Markup"] /100)
+    df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
+    df["Finishing Costs"] = df["Finishing_costs"] *(1 + df["Finishing Markup"] /100)
+    df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
+
+    print("Finished Attributes: ", len(df))
+    df = df.reset_index(drop=True)
+    return df
+
+
 if __name__ == "__main__":
     pass
+    fin = get_refinement()
+    print(fin)
+    print(fin.dtypes)

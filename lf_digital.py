@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_lf_refinement, get_weights
-from helper_pricing import get_finishing_costs
+from helper_pricing_mongo import get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_lf_refinement, get_weights, get_finishing
 from shipping import calculate_shipping
 
 # NOTE: Constants
@@ -13,13 +12,12 @@ FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)
 
-    # lf_printing_rates = get_lf_mahcines()[["supplier", "machine", "colour", "Printing Rate"]]
     lf_printing_rates = get_lf_mahcines()
     print(lf_printing_rates.columns)
     df = df.merge(lf_printing_rates, "left", on="colour")
 
     df["SQM"] = df["format"].apply(get_lf_SQM).astype('float32')
-    df["SQM"] = df["Quantity"]/ df["SQM"]  # FIX: Check the integer ouptut
+    df["SQM"] = df["Quantity"] / df["SQM"]  # FIX: Check the integer ouptut
 
     lf_material = get_lf_material()
     lf_double = list(lf_material[lf_material["double"] == True]["Paper"])
@@ -30,9 +28,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Double"] = np.where(df["Paper"].isin(lf_double),2,1)
 
     df["Printing Rate"] = df["Printing Rate"] * df["SQM"] * df["LF Double"]
-
-    # lf_cutting = get_lf_cutting()
-    # lf_cutting = df.merge(lf_cutting, "left", on=["Supplier", "Paper"])
 
     df["LF Cutting"] = lf_material["LF Cutting"]  # .fillna(0) * df["SQM"]
     df["LF Cutting"] = df["LF Cutting"].fillna(0) * df["SQM"]
@@ -56,7 +51,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     lf_refinement = get_lf_refinement()
     lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "supplier"])
-    # lf_extra.to_csv("LF Extra.csv", index=False)
+
     df["LF Refinement"] = lf_refinement["LF Refinement"]
     df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
     df["LF Refinement"] = np.where(df["Refinement"] == "None", 0, df["LF Refinement"])
@@ -64,11 +59,10 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     # TODO: Calculate Finishing from MONGODB after pushing the data
 
-    finishing = get_finishing_costs()
+    finishing = get_finishing()
     # FIXME: Remove the rename later
-    finishing = finishing.rename({"Supplier": "supplier"}, axis=1)
-    finishing_costs = pd.merge(df[["supplier", "Quantity", "Finishing"]], finishing, "left", left_on=["supplier", "Finishing"], right_on=["supplier", "Attribute"])
-    finishing_costs["Finishing_costs"] = finishing_costs["Setup-Cost"].fillna(0) +np.where(finishing_costs["value"] > 0,FIXED_FINISHING_HANDLING, 0)  + finishing_costs["Quantity"] * finishing_costs["value"]
+    finishing_costs = pd.merge(df[["supplier", "Quantity", "Finishing"]], finishing, "left", left_on=["supplier", "Finishing"], right_on=["supplier", "attribute"])
+    finishing_costs["Finishing_costs"] = finishing_costs["setup"].fillna(0) +np.where(finishing_costs["price"] > 0,FIXED_FINISHING_HANDLING, 0)  + finishing_costs["Quantity"] * finishing_costs["price"]
     finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
     df["LF Finishing"] = finishing_costs["Finishing_costs"]
 
@@ -100,6 +94,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
+
+    print("LF Digital Ended: ", len(df))
 
     df = df.reset_index(drop=True)
     return df

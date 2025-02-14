@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_litho_machines, get_litho_utilization, get_weights
-from helper_pricing import calculate_attributes
+from helper_pricing_mongo import get_litho_machines, get_litho_utilization, get_weights, calculate_attributes
 from shipping import calculate_shipping
 from binding import calculate_binding
 
@@ -72,6 +71,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.merge(litho_utilization, "left", on=["Paper", "sheet_size"])
     litho_machines = get_litho_machines()
     df = pd.merge(df,litho_machines,"left",on="machine")
+
 
     # CHECK: if the condition is still needed
     df = df[df["plates_cost"].isna() == False]
@@ -178,6 +178,8 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
     df = df.reset_index(drop=True)
+
+    print("Litho Calculation Ended: ", len(df))
 
     return df
 

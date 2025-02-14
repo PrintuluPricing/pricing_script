@@ -65,5 +65,5 @@ def create_combinations(product_code):
 
 
 if __name__ == '__main__':
-    create_combinations("tp_popcorn_box").to_csv("tp_popcorn_box.csv")
+    create_combinations("tp_parasol_umbrella").to_csv("tp_parasol_umbrella.csv")
     pass
