@@ -35,14 +35,14 @@ def main(files: list[str]) -> pd.DataFrame | None:
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
     # FIXME: Check the consistent column names later
-    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra']
+    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'Ganging Possible']
 
     file_name = files[0].replace("/", "_")
 
     columns = ["productpart", "paper", "format", "pages", "Quantity",
                "colors", "book_binding", "refinement", "finishing", "options", "file_type"]
     data = pd.concat(pd.read_csv(file, keep_default_na=False) for file in files)
-    print(data.columns)
+
     cat_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options',
                   'SuperCategory', 'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Sheets', 'Extra']
 
