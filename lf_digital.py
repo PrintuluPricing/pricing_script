@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_lf_refinement
-from helper_pricing import get_weights, get_finishing_costs
+from helper_pricing_mongo import get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_lf_refinement, get_weights
+from helper_pricing import get_finishing_costs
 from shipping import calculate_shipping
 
 # NOTE: Constants

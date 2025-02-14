@@ -462,4 +462,6 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    weights = get_weights()
+    print(weights)
     pass

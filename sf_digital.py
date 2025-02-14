@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_clicks
-from helper_pricing import get_weights, calculate_attributes
+from helper_pricing_mongo import get_clicks, get_weights
+from helper_pricing import calculate_attributes
 from shipping import calculate_shipping
 from binding import calculate_binding
 

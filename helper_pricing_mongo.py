@@ -203,17 +203,19 @@ def get_lf_refinement() -> pd.DataFrame:
     return lf_refinement
 
 
-# TODO:
-# def get_weights() -> pd.DataFrame:
-#     if "weights" in cached_data.keys():
-#         return cached_data["weights"]
-#     collection = db["weights"]
-#     weights = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "GSM")
-#     weights = weights[weights["GSM"] != ""].reset_index(drop=True)
-#     weights["GSM"] = pd.to_numeric(weights["GSM"]).astype("float16")
-#     weights[["Attribute", "Type"]] = weights[["Attribute", "Type"]].astype("category")
-#     cached_data["weights"] = weights
-#     return weights
+def get_weights() -> pd.DataFrame:
+    if "weights" in cached_data.keys():
+        return cached_data["weights"]
+    collection = db["attributes"]
+    print(collection)
+    weights = pd.DataFrame(list(collection.find()))
+    weights = weights.drop(["_id", "code", "categories"], axis=1)
+    weights = weights.rename({"name": "Attribute", "type": "Type"}, axis=1)
+    weights = weights[weights["GSM"] != ""].reset_index(drop=True)
+    weights["GSM"] = pd.to_numeric(weights["GSM"]).astype("float16")
+    weights[["Attribute", "Type"]] = weights[["Attribute", "Type"]].astype("category")
+    cached_data["weights"] = weights
+    return weights
 
 
 def get_shipping_costs() -> pd.DataFrame:
@@ -243,4 +245,3 @@ def get_litho_utilization()-> pd.DataFrame:
 
 if __name__ == "__main__":
     pass
-    get_litho_machines()
