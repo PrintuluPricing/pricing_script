@@ -52,8 +52,8 @@ def main(files: list[str]) -> pd.DataFrame | None:
     num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup']
 
     start = datetime.now()
-    with open(f"log_{timestamp}.txt", "a") as f:
-        f.write(f"Started | {file_name} | {timestamp}  | ")
+    # with open(f"log_{timestamp}.txt", "a") as f:
+    #     f.write(f"Started | {file_name} | {timestamp}  | ")
 
 
     data[cat_columns] = data[cat_columns].astype('category')
@@ -78,8 +78,8 @@ def main(files: list[str]) -> pd.DataFrame | None:
     del unique
     print("Removed Duplicates")
 
-    with open(f"log_{timestamp}.txt", "a") as f:
-        f.write(f" {unique_combinations} - unique records  | ")
+    # with open(f"log_{timestamp}.txt", "a") as f:
+    #     f.write(f" {unique_combinations} - unique records  | ")
     print(unique_combinations)
     categories = list(set(list(data["Category"])))
     print("Categories ", categories)
@@ -183,8 +183,8 @@ def main(files: list[str]) -> pd.DataFrame | None:
     print(len(output_data))
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    with open(f"log_{timestamp}.txt", "a") as f:
-        f.write(f"Finished | {len(output_data)} - unique records \n")
+    # with open(f"log_{timestamp}.txt", "a") as f:
+    #     f.write(f"Finished | {len(output_data)} - unique records \n")
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
     output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
@@ -210,7 +210,7 @@ if __name__ == "__main__":
             main([file])
         except Exception as e:
             print(e)
-            with open(f"Failed Runs{timestamp}.txt", "a") as f:
-                f.write(file+ "\n" + "\t" + str(e) + "\n")
-            with open(f"log_{timestamp}.txt", "a") as f:
-                f.write(f"Error | {file} | {timestamp} \n")
+            # with open(f"Failed Runs{timestamp}.txt", "a") as f:
+            #     f.write(file+ "\n" + "\t" + str(e) + "\n")
+            # with open(f"log_{timestamp}.txt", "a") as f:
+            #     f.write(f"Error | {file} | {timestamp} \n")
