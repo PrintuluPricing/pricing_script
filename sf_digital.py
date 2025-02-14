@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_additional, get_clicks, get_weights, calculate_attributes
+from helper_pricing_mongo import get_clicks
+from helper_pricing import get_weights, calculate_attributes
 from shipping import calculate_shipping
 from binding import calculate_binding
 
@@ -10,6 +11,7 @@ BINDING_NAMES = ["Wiro Binding - Black","Wiro Binding - Silver","Wiro Binding - 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print("SF Digital calculation started   :", len(df))
     df = df.reset_index(drop=True)
+    print(df.columns)
     if len(df) == 0:
         return df
     bindings = df["Binding"].isin(BINDING_NAMES)
@@ -17,34 +19,30 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Overs"] = df["Overs"].astype("uint8")
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"]
     df["Total Sheets"] = df["Total Sheets"].astype("uint16")
-    clicks_costs = get_clicks()
+    clicks_costs = get_clicks().drop("colour", axis=1)
     df = pd.merge(df, clicks_costs, "left", on=["machine", "Workstyle", "front_colour", "back_colour"])
     df[["machine", "Workstyle"]] = df[["machine", "Workstyle"]].astype("category")
     df["clicks_cost"] = df["clicks_cost"] * df["Total Sheets"]
     df["clicks_cost"] = df["clicks_cost"].astype("float32")
+
     df = df[df["clicks_cost"] > 0]
     df["Paper Costs"] = df["Paper Costs"] * df["Total Sheets"]
     df["Paper Costs"] = df["Paper Costs"].astype("float32")
-    df["Printing and Paper Costs"] = np.where(df["colors"] == "colour_00", df["Paper Costs"],df["clicks_cost"] + df["Paper Costs"])
+    df["Printing and Paper Costs"] = np.where(df["colour"] == "colour_00", df["Paper Costs"],df["clicks_cost"] + df["Paper Costs"])
     df["Printing and Paper Costs"] = df["Printing and Paper Costs"].astype("float32")
-    additional_prices, markup = get_additional()
-    sf_digital_additional = additional_prices[additional_prices["Attribute"].str.contains("SF - Digital")].reset_index(drop=True)
-    sf_digital_additional = pd.merge(sf_digital_additional, markup, "left", on="Supplier")
-    sf_digital_additional = sf_digital_additional.rename({"value": "Additional"}, axis=1)
-    sf_digital_additional = sf_digital_additional.drop("Attribute", axis=1)
-    df = pd.merge(df, sf_digital_additional, "left", on=["Supplier", "machine"])
-    df["Printing and Paper incl Markup"] = df["Printing and Paper Costs"] * (1 + df["Supplier Markup"] /100 ) + df["Additional"]
+
+    df["Printing and Paper incl Markup"] = df["Printing and Paper Costs"] * (1 + df["markup_percentage"] /100 ) + df["fixed_price"]
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"].astype("float32")
-    df["Printing and Paper incl Markup"] = np.where(df["colors"] == "colour_00", 0, df["Printing and Paper incl Markup"])
+    df["Printing and Paper incl Markup"] = np.where(df["colour"] == "colour_00", 0, df["Printing and Paper incl Markup"])
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 
 
 # NOTE: Cheapest size Selection
-    cheapest = df[["idx", "Sheet Size", "Printing and Paper incl Markup"]].groupby(["idx", "Sheet Size"]).min("Printing and Paper incl Markup")
+    cheapest = df[["idx", "sheet_size", "Printing and Paper incl Markup"]].groupby(["idx", "sheet_size"]).min("Printing and Paper incl Markup")
     cheapest = cheapest.reset_index()
     cheapest = cheapest.sort_values("Printing and Paper incl Markup", ascending=True).drop_duplicates("idx")
-    cheapest = cheapest[["idx", "Sheet Size"]]
-    df = df.merge(cheapest,"inner",on=["idx","Sheet Size"])
+    cheapest = cheapest[["idx", "sheet_size"]]
+    df = df.merge(cheapest,"inner",on=["idx","sheet_size"])
     del cheapest
 
 
@@ -73,7 +71,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
     # FIX: include sheet size and category
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
     print("SF Digital calculation ended   :", len(df))
     df = df.reset_index(drop=True)
 
@@ -83,7 +81,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
     df = df[df["Total Costs"].isna() == False]
     df = df.sort_values("Total Costs", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Supplier", "Quantity"])
+    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
     df = df.reset_index(drop=True)
 
     return df
