@@ -4,9 +4,6 @@ from helper_pricing import get_wiro_pur_binding_costs, get_wiro_thickness, get_w
 
 INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
 
-key = "sheets_key_new.json"
-service_acc = gspread.service_account(key)
-
 
 def get_closest_thickness(thickness: float, binding_thickness: list[float]) -> float:
     if thickness in binding_thickness:
