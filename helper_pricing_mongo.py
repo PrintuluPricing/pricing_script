@@ -3,6 +3,7 @@ import numpy as np
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
+import re
 
 load_dotenv()
 
@@ -90,10 +91,8 @@ def get_lf_SQM(format: str) -> float:
 def get_SQM_df(format: str, sheet_size: str, category: str) -> pd.Series:
     if category == "LF Digital":
         height, width = get_dimensions(format)
-        print("Worked LF Digital")
         return height * width / 10_000
     height, width = get_dimensions(sheet_size)
-    print("Worked Other")
     return height * width / 10_000
 
 
@@ -110,8 +109,9 @@ def get_clicks()-> pd.DataFrame:
     clicks_costs = clicks_costs.drop(["_id"], axis=1)
     clicks_costs["front_colour"] = clicks_costs["colour"].map(COLOR_MAP)
     clicks_costs["back_colour"] = np.where(clicks_costs["workstyle"] == "Simplex", 0, clicks_costs["front_colour"])
-    # clicks_costs = clicks_costs.drop(["Attribute", "Color"], axis=1)
-    # clicks_costs = clicks_costs[clicks_costs["Supplier"].isin(REMOVED_SUPPLIERS) == False]
+    clicks_costs = clicks_costs.rename({"workstyle": "Workstyle", "price": "clicks_cost"}, axis=1)
+    clicks_costs["clicks_cost"] = clicks_costs["clicks_cost"].astype("float16")
+    clicks_costs = clicks_costs[clicks_costs["supplier"].isin(REMOVED_SUPPLIERS) == False]
     cached_data["clicks"] = clicks_costs
     return clicks_costs
 
@@ -125,7 +125,7 @@ def get_litho_machines() -> pd.DataFrame:
     litho_machines = litho_machines.drop(["_id"], axis=1)
     litho_machines = litho_machines[litho_machines["supplier"].isin(REMOVED_SUPPLIERS) == False]
     litho_machines[["supplier", "machine"]] = litho_machines[["supplier", "machine"]].astype("category")
-    litho_machines[["cost_per_hour", "plates_cost", "setup_time", "sheets_per_hour"]] = litho_machines[["cost_per_hour", "plates_cost", "setup_time", "sheets_per_hour"]].astype('float16')
+    litho_machines[["cost_per_hour", "plates_cost", "setup_time", "sheets_per_hour","fixed_price", "markup_percentage"]] = litho_machines[["cost_per_hour", "plates_cost", "setup_time", "sheets_per_hour","fixed_price", "markup_percentage"]].astype('float16')
     cached_data["litho_machines"] = litho_machines
     return litho_machines
 
@@ -140,7 +140,6 @@ def get_paper_costs()-> pd.DataFrame:
     paper_prices = paper_prices.rename({"paper": "Paper", "price": "Paper Costs"}, axis=1)
     paper_prices["Paper Costs"] = paper_prices["Paper Costs"].astype(float)
     cached_data["paper"] = paper_prices
-    print(paper_prices)
     return paper_prices
 
 
@@ -150,7 +149,6 @@ def get_lf_mahcines() -> pd.DataFrame:
     lf_machines_collection = db["lf_machines_prices"]
     lf_machines = pd.DataFrame(list(lf_machines_collection.find()))
     lf_machines = lf_machines.drop(["_id"], axis=1)
-    print(lf_machines.columns)
     lf_machines = lf_machines.drop("attribute", axis=1)
     lf_machines = lf_machines.rename({"price": "Printing Rate"}, axis=1)
     lf_machines = lf_machines[lf_machines["supplier"].isin(REMOVED_SUPPLIERS) == False]
@@ -205,6 +203,44 @@ def get_lf_refinement() -> pd.DataFrame:
     return lf_refinement
 
 
+# TODO:
+# def get_weights() -> pd.DataFrame:
+#     if "weights" in cached_data.keys():
+#         return cached_data["weights"]
+#     collection = db["weights"]
+#     weights = read_google_sheet(INPUT_PRICES_FOLDER, "Input Prices", "GSM")
+#     weights = weights[weights["GSM"] != ""].reset_index(drop=True)
+#     weights["GSM"] = pd.to_numeric(weights["GSM"]).astype("float16")
+#     weights[["Attribute", "Type"]] = weights[["Attribute", "Type"]].astype("category")
+#     cached_data["weights"] = weights
+#     return weights
+
+
+def get_shipping_costs() -> pd.DataFrame:
+    if "shipping" in cached_data.keys():
+        return cached_data["shipping"]
+    collection = db["shipping_prices"]
+    shipping = pd.DataFrame(list(collection.find()))
+    shipping = shipping.drop(["_id"], axis=1)
+    shipping = shipping[shipping["destination"] == "National"]
+    shipping[["minimum_cost", "minimum_kg", "kg_after"]] = shipping[["minimum_cost", "minimum_kg", "kg_after"]].astype('float32')
+    cached_data["shipping"] = shipping
+    return shipping
+
+
+def get_litho_utilization()-> pd.DataFrame:
+    if "litho_utilization" in cached_data.keys():
+        return cached_data["litho_utilization"]
+    collection = db["litho_utilization"]
+    litho_utilization = pd.DataFrame(list(collection.find()))
+    litho_utilization = litho_utilization.drop(["_id"], axis=1)
+    litho_utilization["utilization"] = pd.to_numeric(litho_utilization["utilization"], errors="coerce").astype("float16")
+    litho_utilization = litho_utilization.rename({"paper": "Paper", "paper_code": "Paper Code"}, axis=1)
+    litho_utilization[["sheet_size", "Paper", "Paper Code"]] = litho_utilization[["sheet_size", "Paper", "Paper Code"]].astype("category")
+    cached_data["litho_utilization"] = litho_utilization
+    return litho_utilization
+
+
 if __name__ == "__main__":
     pass
-    get_lf_mahcines()
+    get_litho_machines()
