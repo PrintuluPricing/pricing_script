@@ -25,8 +25,6 @@ logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
 
-logger.debug(MONGO_URI)
-
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
@@ -71,10 +69,13 @@ def connect_db():
 
 @app.route('/api/combine/<code>', methods=['POST'])
 def get_attributes_by_category(code):
+    logger.debug(f"Starting Calculation for {code}")
     combinations = create_combinations(code)
     combinations.to_csv(f"{code}_combinations.csv", index=False)
-    main([f"{code}_combinations.csv"])
-    return combinations.to_json(orient='records')
+    logger.debug(f"Created Combinations for {code}")
+    final = main([f"{code}_combinations.csv"])
+    logger.debug(f"Final Pricing for {code}")
+    return final.to_json(orient='records')
 
 
 if __name__ == '__main__':
