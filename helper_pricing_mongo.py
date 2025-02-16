@@ -111,6 +111,7 @@ def get_clicks()-> pd.DataFrame:
     clicks_costs["back_colour"] = np.where(clicks_costs["workstyle"] == "Simplex", 0, clicks_costs["front_colour"])
     clicks_costs = clicks_costs.rename({"workstyle": "Workstyle", "price": "clicks_cost"}, axis=1)
     clicks_costs["clicks_cost"] = clicks_costs["clicks_cost"].astype("float16")
+    clicks_costs["fixed_price"] = clicks_costs["fixed_price"].astype("float16")
     clicks_costs = clicks_costs[clicks_costs["supplier"].isin(REMOVED_SUPPLIERS) == False]
     cached_data["clicks"] = clicks_costs
     return clicks_costs
@@ -374,7 +375,6 @@ def get_hanger() -> tuple[pd.DataFrame, list[float], list[float]]:
     cached_data["hanger"] = hanger_prices
     cached_data["hanger_length"] = hanger_length
     cached_data["hanger_thickness"] = hanger_thickness
-    print(hanger_prices)
     return hanger_prices, hanger_length, hanger_thickness
 
 
@@ -393,7 +393,6 @@ def get_pur() -> tuple[pd.DataFrame, list[float], list[float]]:
     cached_data["pur_quantity"] = pur_quantity
     cached_data["pur"] = pur_prices
     cached_data["pur_thickness"] = pur_thickness
-    print(pur_prices)
     return pur_prices, pur_quantity, pur_thickness
 
 
@@ -438,4 +437,5 @@ def get_hanger_length() -> list[float]:
 
 
 if __name__ == "__main__":
+    get_clicks()
     pass

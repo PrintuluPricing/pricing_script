@@ -8,7 +8,7 @@ import litho
 import sf_digital
 import lf_digital
 import gifts
-import custom
+# import custom
 import logging
 from datetime import datetime
 import numpy as np
@@ -43,7 +43,7 @@ def return_first(args):
 
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
-def main(files: list[str]) -> pd.DataFrame | None:
+def pricing_calculation(files: list[str]) -> pd.DataFrame:
 
     logger.debug(f"Started Pricing Calculation : {files}")
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
@@ -74,7 +74,7 @@ def main(files: list[str]) -> pd.DataFrame | None:
     data["Quantity"] = data["Quantity"].astype('uint32')
     print(f"Casting took {datetime.now() - start}")
     products = list(set(list(data["Product Code"])))
-    data = data.rename({"Product": "productpart"}, axis=1)
+    data = data.rename({"Product": "Product Code"}, axis=1)
 
     logger.debug(len(data))
     logger.debug("Removing Duplicates")
@@ -136,13 +136,12 @@ def main(files: list[str]) -> pd.DataFrame | None:
                 dfs.append(litho_data)
                 del litho_data
 
-
         # SF Digital Calculation
         if len(sf_digital_data) > 0:
             sf_digital_data = sf_digital.calculation(sf_digital_data)
             # sf_digital_data = calculate_binding(sf_digital_data)
-            # sf_digital_data = calculate_attributes(sf_digital_data, finishing)
 
+            # sf_digital_data = calculate_attributes(sf_digital_data, finishing)
             if len(sf_digital_data) > 0:
                 dfs.append(sf_digital_data)
                 del sf_digital_data
@@ -215,11 +214,13 @@ def main(files: list[str]) -> pd.DataFrame | None:
     final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
     final_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
-    return output_data
+    logger.debug(f"Final Data returned from Main: {type(final_data)}")
+    return final_data
 
 
 if __name__ == "__main__":
     files = glob.glob("./*tp*combinations.csv")
+    logger.debug(files)
     if len(loading_options()) > 0:
         files = loading_options()
     for file in files:

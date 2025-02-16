@@ -7,7 +7,7 @@ import os
 import logging
 from dotenv import load_dotenv
 from combine import create_combinations
-from pricing import main
+from pricing import pricing_calculation
 
 
 load_dotenv()
@@ -73,7 +73,8 @@ def get_attributes_by_category(code):
     combinations = create_combinations(code)
     combinations.to_csv(f"{code}_combinations.csv", index=False)
     logger.debug(f"Created Combinations for {code}")
-    final = main([f"{code}_combinations.csv"])
+    final = pricing_calculation([f"{code}_combinations.csv"])
+    final.to_csv("testing from app.csv")
     logger.debug(f"Final Pricing for {code}")
     return final.to_json(orient='records')
 

@@ -70,7 +70,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
     # FIX: include sheet size and category
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
+    df = df.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
     print("SF Digital calculation ended   :", len(df))
     df = df.reset_index(drop=True)
 

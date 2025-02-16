@@ -159,7 +159,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = df["GSM"] * df["Total Sheets"] + df["Refinement GSM"] + df["Extra GSM"]
     df["Total Weight"] = df["GSM"] * df["SQM"] / 1000
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity", "supplier"])
+    df = df.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity", "supplier"])
     df = df.reset_index(drop=True)
 
     # CHECK: Refinement, finishing and Extra weights
@@ -176,7 +176,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
     df = df[df["Total Costs"].isna() == False]
     df = df.sort_values("Total Costs", ascending=True)
-    df = df.drop_duplicates(["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
+    df = df.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
     df = df.reset_index(drop=True)
 
     print("Litho Calculation Ended: ", len(df))
