@@ -1,8 +1,5 @@
 import pandas as pd
-import gspread
-from helper_pricing import get_wiro_pur_binding_costs, get_wiro_thickness, get_wiro_length, get_pur_thickness, get_hanger_length, get_pur_quantity, get_wiro_pur_binding_costs
-
-INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
+from helper_pricing_mongo import get_wiro, get_hanger, get_pur, get_wiro_thickness, get_wiro_length, get_pur_quantity, get_hanger_length, get_pur_thickness
 
 
 def get_closest_thickness(thickness: float, binding_thickness: list[float]) -> float:
@@ -62,19 +59,19 @@ def calculate_binding(df: pd.DataFrame) -> pd.DataFrame:
     df["Hanger Length"] = df["Hanger Length"].replace("\.0", "", regex=True)
     df["Pur Quantity"] = df["Quantity"].apply(get_closest_quantities)
 
-    wiro_prices = get_wiro_pur_binding_costs()[0]
+    wiro_prices = get_wiro()[0]
     wiro_prices = df[["Binding", "Wiro Length", "Wiro Thickness", "Quantity"]].merge(wiro_prices, "left", left_on=["Binding", "Wiro Length", "Wiro Thickness"], right_on=["Attribute", "Length", "Thickness"])
     wiro_prices["Wiro Costs"] = wiro_prices["Setup"] + wiro_prices["value"] * wiro_prices["Quantity_x"]
     df["Wiro Costs"] = wiro_prices["Wiro Costs"].fillna(0)
     del (wiro_prices)
 
-    pur_prices = get_wiro_pur_binding_costs()[5]
+    pur_prices = get_pur()[0]
     pur_prices = df[["Binding", "Pur Thickness", "Quantity", "Pur Quantity"]].merge(pur_prices, "left", left_on=["Binding", "Pur Thickness", "Pur Quantity"], right_on=["Attribute", "Thickness", "Quantity"])
     pur_prices["Pur Costs"] = pur_prices["Setup"] + pur_prices["value"] * pur_prices["Quantity_x"]
     df["Pur Costs"] = pur_prices["Pur Costs"].fillna(0)
     del (pur_prices)
 
-    hangers_prices = get_wiro_pur_binding_costs()[3]
+    hangers_prices = get_hanger()[0]
     hangers_prices = hangers_prices.drop_duplicates(["Attribute", "Length"]).reset_index(drop=True)
     hangers_prices = df[["Binding", "Hanger Length","idx", "Quantity"]].merge(hangers_prices, "left", left_on=["Binding", "Hanger Length",], right_on=["Attribute", "Length"])
     hangers_prices["Hangers Costs"] = hangers_prices["Setup"] + hangers_prices["value"] * hangers_prices["Quantity_x"]

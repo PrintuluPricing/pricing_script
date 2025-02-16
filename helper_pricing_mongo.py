@@ -341,9 +341,101 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
     return df
 
+def get_wiro() -> tuple[pd.DataFrame, list[float], list[float]]:
+    if "wiro" in cached_data.keys():
+        return cached_data["wiro"], cached_data["wiro_thickness"], cached_data["wiro_length"]
+    collection = db["wiro_bindings"]
+    wiro_prices = pd.DataFrame(list(collection.find()))
+    wiro_prices = wiro_prices.drop("_id", axis=1)
+    wiro_prices["length"] = pd.to_numeric(wiro_prices["length"])
+    wiro_prices["thickness"] = pd.to_numeric(wiro_prices["thickness"])
+    wiro_prices["price"] = pd.to_numeric(wiro_prices["price"])
+    wiro_prices["setup"] = pd.to_numeric(wiro_prices["setup"])
+    wiro_length = list(set(wiro_prices["length"]))
+    wiro_thickness = list(set(wiro_prices["thickness"]))
+    cached_data["wiro"] = wiro_prices
+    cached_data["wiro_length"] = wiro_length
+    cached_data["wiro_thickness"] = wiro_thickness
+    return wiro_prices, wiro_length, wiro_thickness
+
+
+def get_hanger() -> tuple[pd.DataFrame, list[float], list[float]]:
+    if "hanger" in cached_data.keys():
+        return cached_data["hanger"], cached_data["hanger_thickness"], cached_data["hanger_length"]
+    collection = db["hanger_bindings"]
+    hanger_prices = pd.DataFrame(list(collection.find()))
+    hanger_prices = hanger_prices.drop("_id", axis=1)
+    hanger_prices["length"] = pd.to_numeric(hanger_prices["length"])
+    hanger_prices["thickness"] = pd.to_numeric(hanger_prices["thickness"])
+    hanger_prices["price"] = pd.to_numeric(hanger_prices["price"])
+    hanger_prices["setup"] = pd.to_numeric(hanger_prices["setup"])
+    hanger_length = list(set(hanger_prices["length"]))
+    hanger_thickness = list(set(hanger_prices["thickness"]))
+    cached_data["hanger"] = hanger_prices
+    cached_data["hanger_length"] = hanger_length
+    cached_data["hanger_thickness"] = hanger_thickness
+    print(hanger_prices)
+    return hanger_prices, hanger_length, hanger_thickness
+
+
+def get_pur() -> tuple[pd.DataFrame, list[float], list[float]]:
+    if "pur" in cached_data.keys():
+        return cached_data["pur"], cached_data["pur_thickness"], cached_data["pur_quantity"]
+    collection = db["pur_bindings"]
+    pur_prices = pd.DataFrame(list(collection.find()))
+    pur_prices = pur_prices.drop("_id", axis=1)
+    pur_prices["quantity"] = pd.to_numeric(pur_prices["quantity"])
+    pur_prices["thickness"] = pd.to_numeric(pur_prices["thickness"])
+    pur_prices["price"] = pd.to_numeric(pur_prices["price"])
+    pur_prices["setup"] = pd.to_numeric(pur_prices["setup"])
+    pur_quantity = list(set(pur_prices["quantity"]))
+    pur_thickness = list(set(pur_prices["thickness"]))
+    cached_data["pur_quantity"] = pur_quantity
+    cached_data["pur"] = pur_prices
+    cached_data["pur_thickness"] = pur_thickness
+    print(pur_prices)
+    return pur_prices, pur_quantity, pur_thickness
+
+
+def get_wiro_thickness() -> list[float]:
+    if "wiro_thickness" in cached_data.keys():
+        return cached_data["wiro_thickness"]
+    wiro_thickness = get_wiro()[2]
+    cached_data["wiro_thickness"] = wiro_thickness
+    return wiro_thickness
+
+
+def get_wiro_length() -> list[float]:
+    if "wiro_length" in cached_data.keys():
+        return cached_data["wiro_length"]
+    wiro_length = get_wiro()[1]
+    cached_data["wiro_length"] = wiro_length
+    return wiro_length
+
+
+def get_pur_thickness() -> list[float]:
+    if "pur_thickness" in cached_data.keys():
+        return cached_data["pur_thickness"]
+    pur_thickness = get_pur()[2]
+    cached_data["pur_thickness"] = pur_thickness
+    return pur_thickness
+
+
+def get_pur_quantity() -> list[float]:
+    if "pur_quantity" in cached_data.keys():
+        return cached_data["pur_quantity"]
+    pur_quantity = get_pur()[1]
+    cached_data["pur_quantity"] = pur_quantity
+    return pur_quantity
+
+
+def get_hanger_length() -> list[float]:
+    if "hanger_length" in cached_data.keys():
+        return cached_data["hanger_length"]
+    hanger_length = get_hanger()[1]
+    cached_data["hanger_length"] = hanger_length
+    return hanger_length
+
 
 if __name__ == "__main__":
     pass
-    fin = get_refinement()
-    print(fin)
-    print(fin.dtypes)
