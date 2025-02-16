@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_weights, get_shipping_costs, get_finishing_costs, get_litho_sf_SQM, calculate_attributes
+from helper_pricing_mongo import get_weights, get_finishing, get_litho_sf_SQM
 from shipping import calculate_shipping
 
-def calculation(df: pd.DataFrame)-> pd.DataFrame:
+
+def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
     print("Gifts Calculation Started  :", len(df))
 
@@ -11,7 +12,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
     df["SQM"] = df["Format"].apply(get_litho_sf_SQM).astype('float32')
 
-    finishing = get_finishing_costs()
+    finishing = get_finishing()
     finishing = finishing[(finishing["value"].isna() == False) & (finishing["Supplier"] != "Quantity")]
     finishing = finishing.reset_index(drop=True)
 

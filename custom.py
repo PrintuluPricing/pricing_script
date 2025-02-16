@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from helper_pricing import get_custom
+# TODO: Custom Calculation
+# from helper_pricing import get_custom
 from shipping import calculate_shipping
 
 

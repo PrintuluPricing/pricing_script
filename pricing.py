@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 import sys
 import warnings
-from helper_pricing import get_dimensions
+from helper_pricing_mongo import get_dimensions
 import litho_sf_digital
 import litho
 import sf_digital
@@ -145,10 +145,11 @@ def main(files: list[str]) -> pd.DataFrame | None:
         if len(gifts_data) > 0:
             dfs.append(gifts_data)
 
-    if "Custom" in categories:
-        custom_data = custom.calculation(custom_data)
-        if len(custom_data) > 0:
-            dfs.append(custom_data)
+    # FIXME: This needs to be updated
+    # if "Custom" in categories:
+    #     custom_data = custom.calculation(custom_data)
+    #     if len(custom_data) > 0:
+    #         dfs.append(custom_data)
 
     print("Collecting Data")
     if len(dfs) == 0:
