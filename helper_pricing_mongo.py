@@ -288,7 +288,6 @@ def get_refinement() -> pd.DataFrame:
 def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     finishing, refinement, binding, extra = get_finishing(), get_refinement(), get_binding(), get_extra()
     # Index(['supplier', 'attribute', 'attribute_code', 'price', 'setup'], dtype='object')
-
     df = df.reset_index(drop=True)
 
     print("Calculating Attributes: ", len(df))
@@ -341,6 +340,7 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     print("Finished Attributes: ", len(df))
     df = df.reset_index(drop=True)
     return df
+
 
 def get_wiro() -> tuple[pd.DataFrame, list[float], list[float]]:
     if "wiro" in cached_data.keys():

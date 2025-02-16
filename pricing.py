@@ -25,8 +25,8 @@ DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 load_dotenv()
 log_level = logging.INFO
 
-if DEBUG:
-    log_level = logging.DEBUG
+# if DEBUG:
+#    log_level = logging.DEBUG
 
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
@@ -41,11 +41,13 @@ def loading_options() -> list[str]:
 def return_first(args):
     return args[0]
 
+
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
+
 
 def pricing_calculation(files: list[str]) -> pd.DataFrame:
 
-    logger.debug(f"Started Pricing Calculation : {files}")
+    print(f"Started Pricing Calculation : {files}")
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
     # FIXME: Check the consistent column names later
@@ -76,8 +78,8 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     products = list(set(list(data["Product Code"])))
     data = data.rename({"Product": "Product Code"}, axis=1)
 
-    logger.debug(len(data))
-    logger.debug("Removing Duplicates")
+    print(len(data))
+    print("Removing Duplicates")
     data = data.drop_duplicates(["Category","Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
     unique = data.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]).reset_index(drop=True)
     unique = unique[["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]]
@@ -89,11 +91,11 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     data = data.reset_index(drop=True)
     data = data.merge(unique, "left", on=["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
     del unique
-    logger.debug("Removed Duplicates")
+    print("Removed Duplicates")
 
     # with open(f"log_{timestamp}.txt", "a") as f:
     #     f.write(f" {unique_combinations} - unique records  | ")
-    logger.debug(unique_combinations)
+    print(unique_combinations)
     categories = list(set(list(data["Category"])))
     print("Categories ", categories)
     data["file_type"] = "#"
@@ -117,11 +119,11 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
 
     dfs = []
     if "Litho" in categories or "SF Digital" in categories:
-        logger.debug("Adjusting Litho / SF Digital")
+        print("Adjusting Litho / SF Digital")
         litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
-        logger.debug("Finished Litho / SF Digital")
+        print("Finished Litho / SF Digital")
 
-        logger.debug("Splitting Litho / SF Digital")
+        print("Splitting Litho / SF Digital")
         litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"].reset_index(drop=True)
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
         litho_data = litho_data.reset_index(drop=True)
@@ -131,6 +133,7 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
             litho_data = litho.calculation(litho_data)
             # litho_data = calculate_binding(litho_data)
             # litho_data = calculate_attributes(litho_data, finishing)
+            print("Litho Data!! ", len(litho_data))
 
             if len(litho_data) > 0:
                 dfs.append(litho_data)
@@ -140,14 +143,14 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
         if len(sf_digital_data) > 0:
             sf_digital_data = sf_digital.calculation(sf_digital_data)
             # sf_digital_data = calculate_binding(sf_digital_data)
-
             # sf_digital_data = calculate_attributes(sf_digital_data, finishing)
+
             if len(sf_digital_data) > 0:
                 dfs.append(sf_digital_data)
                 del sf_digital_data
 
     if "LF Digital" in categories:
-        logger.debug("Started LF Digital")
+        print("Started LF Digital")
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         if len(lf_digital_data) > 0:
             dfs.append(lf_digital_data)
@@ -214,17 +217,18 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
     final_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
-    logger.debug(f"Final Data returned from Main: {type(final_data)}")
-    return final_data
+    print(f"Final Data returned from Main: {type(final_data)}")
+    data_to_send = final_data.reset_index()
+    return data_to_send
 
 
 if __name__ == "__main__":
     files = glob.glob("./*tp*combinations.csv")
-    logger.debug(files)
+    print(files)
     if len(loading_options()) > 0:
         files = loading_options()
     for file in files:
         try:
             main([file])
         except Exception as e:
-            logger.debug(e)
+            print(e)
