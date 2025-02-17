@@ -18,3 +18,4 @@ RUN_*
 brochure/*
 .env
 __pycache__
+*venv/*
