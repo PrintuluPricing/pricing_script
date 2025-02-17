@@ -197,7 +197,7 @@ def get_lf_refinement() -> pd.DataFrame:
     lf_refinement = pd.DataFrame(list(collection.find()))
     lf_refinement = lf_refinement.drop(["_id"], axis=1)
     lf_refinement["price"] = pd.to_numeric(lf_refinement["price"]).astype("float16")
-    lf_refinement = lf_refinement.rename({"price": "LF Refinement","refinement":"Refinement"}, axis=1)
+    lf_refinement = lf_refinement.rename({"price": "LF Refinement","attribute":"Refinement"}, axis=1)
     lf_refinement = lf_refinement[lf_refinement["supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_refinement[["supplier", "Refinement"]] = lf_refinement[["supplier", "Refinement"]].astype("category")
     cached_data["lf_refinement"] = lf_refinement
@@ -280,7 +280,7 @@ def get_refinement() -> pd.DataFrame:
     refinement = pd.DataFrame(list(collection.find()))
     refinement = refinement.drop("_id", axis=1)
     refinement["price"] = refinement["price"].astype("float16")
-    refinement = refinement.rename({"refinement": "Refinement", "price": "Refinement_costs"}, axis=1)
+    refinement = refinement.rename({"attribute": "Refinement", "price": "Refinement_costs"}, axis=1)
     cached_data["refinement"] = refinement
     return refinement
 
