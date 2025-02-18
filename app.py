@@ -8,6 +8,7 @@ import logging
 from dotenv import load_dotenv
 from combine import create_combinations
 from pricing import pricing_calculation
+import pika
 
 
 load_dotenv()
@@ -45,16 +46,6 @@ except Exception as e:
 
 def parse_json(data):
     return json.loads(json_util.dumps(data))
-
-
-@app.route('/')
-def serve_static():
-    return send_from_directory('.', 'index.html')
-
-
-@app.route('/<path:path>')
-def serve_file(path):
-    return send_from_directory('.', path)
 
 
 @app.route('/api/db/connect', methods=['POST'])
