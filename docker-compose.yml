@@ -1,0 +1,24 @@
+version: "3.12"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file: .env  # Load environment variables from .env
+    volumes:
+      - ./app:/app
+      - output:/app/output # Mount the persistent volume
+    command: python app.py
+
+  worker:
+    build: .
+    depends_on:
+      - web
+    env_file: .env # Load environment variables from .env
+    volumes:
+      - ./app:/app
+    command: bash -c "source /app/.venv/bin/activate && celery -A app.celery worker --loglevel=info"
+
+volumes:
+  output:
