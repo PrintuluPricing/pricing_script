@@ -213,10 +213,10 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     output_data["price"] = 1
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
     output_data["Unit Price"] = np.round(output_data["Unit Price"], 2).astype("float32")
-    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} unit price.csv", index=False)
+    # output_data.to_csv(f"./output/Output Data {products[0] if len(products) == 1 else None} {timestamp} unit price.csv", index=False)
     final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
-    final_data.to_csv(f"Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
+    final_data.to_csv(f"./Ouput/Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
     print(f"Final Data returned from Main: {type(final_data)}")
     data_to_send = final_data.reset_index()
     return data_to_send

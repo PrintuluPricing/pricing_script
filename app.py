@@ -58,9 +58,11 @@ def connect_db():
         logger.error(f"Connection test failed: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+
 # Celery task for long-running process
+
 @celery.task
-def calculate_pricing(code):
+def calculate_pricing_job(code):
     logger.debug(f"Starting Calculation for {code}")
     combinations = create_combinations(code)
     combinations.to_csv(f"{code}_combinations.csv", index=False)
@@ -70,15 +72,17 @@ def calculate_pricing(code):
     logger.debug(f"Final Pricing for {code}")
     return final.to_json(orient='records')
 
+
 @app.route('/api/combine/<code>', methods=['POST'])
-def get_attributes_by_category(code):
+def calculate_pricing(code):
     # Enqueue the task with Celery
-    task = calculate_pricing.delay(code)
+    task = calculate_pricing_job.delay(code)
     return jsonify({"task_id": task.id}), 202
+
 
 @app.route('/api/task/<task_id>', methods=['GET'])
 def get_task_status(task_id):
-    task = calculate_pricing.AsyncResult(task_id)
+    task = calculate_pricing_job.AsyncResult(task_id)
     if task.state == 'PENDING':
         return jsonify({"status": "pending"}), 200
     elif task.state == 'SUCCESS':
@@ -87,6 +91,7 @@ def get_task_status(task_id):
         return jsonify({"status": "failure", "error": str(task.result)}), 200
     else:
         return jsonify({"status": task.state}), 200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=DEBUG)
