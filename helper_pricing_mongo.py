@@ -169,7 +169,7 @@ def get_lf_material() -> pd.DataFrame:
     lf_material["price"] = pd.to_numeric(lf_material["price"]).astype("float16")
     lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
     lf_material["cutting"] = pd.to_numeric(lf_material["cutting"]).astype("float16")
-    lf_material = lf_material.rename({"price": "LF Material", "paper": "Paper", "waste": "Waste %", "cutting": "LF Cutting"}, axis=1)
+    lf_material = lf_material.rename({"price": "LF Material", "attribute": "Paper", "waste": "Waste %", "cutting": "LF Cutting"}, axis=1)
     lf_material = lf_material[lf_material["supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_material[["supplier", "Paper"]] = lf_material[["supplier", "Paper"]].astype("category")
     cached_data["lf_material"] = lf_material
