@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson import json_util
@@ -63,6 +63,7 @@ def connect_db():
 
 @celery.task
 def calculate_pricing_job(code):
+    logger.info("Celery Task Started")
     logger.debug(f"Starting Calculation for {code}")
     combinations = create_combinations(code)
     combinations.to_csv(f"{code}_combinations.csv", index=False)
@@ -70,13 +71,14 @@ def calculate_pricing_job(code):
     final = pricing_calculation([f"{code}_combinations.csv"])
     final.to_csv("testing from app.csv")
     logger.debug(f"Final Pricing for {code}")
-    return final.to_json(orient='records')
+    logger.info("Celery Task Ended")
 
 
 @app.route('/api/combine/<code>', methods=['POST'])
 def calculate_pricing(code):
     # Enqueue the task with Celery
     task = calculate_pricing_job.delay(code)
+    logger.debug(task)
     return jsonify({"task_id": task.id}), 202
 
 

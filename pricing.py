@@ -176,8 +176,8 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     output_data = output_data.reset_index(drop=True)
     print("Collected All")
     del dfs
-    output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
-    output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
+    # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
+    # output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
     output_data = output_data[output_data["Total Costs"].isna() == False]
     print(len(output_data))
     # NOTE: First remove_duplicates from the same combination and keep one for each supplier with the lowest cost
@@ -206,7 +206,7 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     #     f.write(f"Finished | {len(output_data)} - unique records \n")
     print(len(output_data))
     output_data = output_data.reset_index(drop=True)
-    output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
+    # output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(columns)
     output_data = output_data.reset_index(drop=True)
@@ -216,7 +216,7 @@ def pricing_calculation(files: list[str]) -> pd.DataFrame:
     # output_data.to_csv(f"./output/Output Data {products[0] if len(products) == 1 else None} {timestamp} unit price.csv", index=False)
     final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
-    final_data.to_csv(f"./Ouput/Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
+    final_data.to_csv(f"./output/Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
     print(f"Final Data returned from Main: {type(final_data)}")
     data_to_send = final_data.reset_index()
     return data_to_send
