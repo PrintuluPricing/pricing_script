@@ -76,9 +76,8 @@ def calculate_pricing_job(code):
 
 @app.route('/api/combine/<code>', methods=['POST'])
 def calculate_pricing(code):
-    # Enqueue the task with Celery
     task = calculate_pricing_job.delay(code)
-    logger.debug(task)
+    logger.info("Task Started for ", code)
     return jsonify({"task_id": task.id}), 202
 
 
