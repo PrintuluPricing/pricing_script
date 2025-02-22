@@ -8,12 +8,16 @@ import logging
 from dotenv import load_dotenv
 from combine import create_combinations
 from pricing import pricing_calculation
-from celery import Celery
+from rq import Queue
+import redis
 
 load_dotenv()
 MONGO_URI = os.environ.get("MONGO_URI", "")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
+connection = redis.Connection(REDIS_URL)
+queue = Queue(connection=connection)
+
 
 # Configure logging
 log_level = logging.INFO
@@ -39,13 +43,6 @@ except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {str(e)}")
     raise
 
-# Celery configuration
-app.config['CELERY_BROKER_URL'] = REDIS_URL
-app.config['CELERY_RESULT_BACKEND'] = REDIS_URL
-
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(app.config)
-
 
 def parse_json(data):
     return json.loads(json_util.dumps(data))
@@ -61,9 +58,6 @@ def connect_db():
         return jsonify({'error': str(e)}), 500
 
 
-# Celery task for long-running process
-
-@celery.task
 def calculate_pricing_job(code):
     logger.info(f"Starting Calculation for {code}")
     combinations = create_combinations(code)
@@ -76,19 +70,17 @@ def calculate_pricing_job(code):
 
 @app.route('/api/combine/<code>', methods=['POST'])
 def calculate_pricing(code):
-    task = calculate_pricing_job.delay(code)
+    task = queue.enqueue(calculate_pricing_job, code)
     logger.info("Task Started for ", code)
     return jsonify({"task_id": task.id}), 202
 
 
 @app.route('/api/task/<task_id>', methods=['GET'])
-def get_task_status(task_id):
-    task = calculate_pricing_job.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        return jsonify({"status": "pending"}), 200
-    elif task.state == 'SUCCESS':
-        return jsonify({"status": "success", "result": task.result}), 200
-    elif task.state == 'FAILURE':
-        return jsonify({"status": "failure", "error": str(task.result)}), 200
-    else:
-        return jsonify({"status": task.state}), 200
+def get_task_status(job_id):
+    job = queue.fetch_job(job_id)
+    if job is None:
+        return jsonify({'error': 'Job not found'}), 404
+    status = job.get_status()
+    result = job.result  # This will be None if the job is not complete
+
+    return jsonify({'status': status, 'result': result}), 200
