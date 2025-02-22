@@ -9,7 +9,7 @@ services:
     volumes:
       - ./app:/app
       - output:/app/output # Mount the persistent volume
-    command: python app.py
+    command: "gunicorn --bind 0.0.0.0:5000  app:app"
 
   worker:
     build: .
