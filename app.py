@@ -65,15 +65,13 @@ def connect_db():
 
 @celery.task
 def calculate_pricing_job(code):
-    logger.info("Celery Task Started")
-    logger.debug(f"Starting Calculation for {code}")
+    logger.info(f"Starting Calculation for {code}")
     combinations = create_combinations(code)
     combinations.to_csv(f"{code}_combinations.csv", index=False)
-    logger.debug(f"Created Combinations for {code}")
+    logger.info(f"Created Combinations for {code}")
     final = pricing_calculation([f"{code}_combinations.csv"])
     final.to_csv("testing from app.csv")
-    logger.debug(f"Final Pricing for {code}")
-    logger.info("Celery Task Ended")
+    logger.info(f"Final Pricing for {code}")
 
 
 @app.route('/api/combine/<code>', methods=['POST'])
