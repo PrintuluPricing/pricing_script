@@ -75,7 +75,3 @@ def get_task_status(job_id):
     result = job.result  # This will be None if the job is not complete
 
     return jsonify({'status': status, 'result': result}), 200
-
-
-if __name__ == "__main__":
-    app.run("0.0.0.0", 3000, True)
