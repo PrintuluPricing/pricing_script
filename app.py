@@ -46,8 +46,10 @@ app.config['CELERY_RESULT_BACKEND'] = REDIS_URL
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
+
 def parse_json(data):
     return json.loads(json_util.dumps(data))
+
 
 @app.route('/api/db/connect', methods=['POST'])
 def connect_db():
