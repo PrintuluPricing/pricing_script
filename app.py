@@ -6,10 +6,9 @@ import json
 import os
 import logging
 from dotenv import load_dotenv
-from combine import create_combinations
-from pricing import pricing_calculation
 from rq import Queue
 import redis
+from tasks import calculate_pricing_job
 
 
 load_dotenv()
@@ -60,16 +59,6 @@ def connect_db():
         return jsonify({'error': str(e)}), 500
 
 
-def calculate_pricing_job(code):
-    logger.info(f"Starting Calculation for {code}")
-    combinations = create_combinations(code)
-    combinations.to_csv(f"{code}_combinations.csv", index=False)
-    logger.info(f"Created Combinations for {code}")
-    final = pricing_calculation([f"{code}_combinations.csv"])
-    final.to_csv("testing from app.csv")
-    logger.info(f"Final Pricing for {code}")
-
-
 @app.route('/api/combine/<code>', methods=['POST'])
 def calculate_pricing(code):
     task = queue.enqueue(calculate_pricing_job, code)
@@ -86,3 +75,7 @@ def get_task_status(job_id):
     result = job.result  # This will be None if the job is not complete
 
     return jsonify({'status': status, 'result': result}), 200
+
+
+if __name__ == "__main__":
+    app.run("0.0.0.0", 3000, True)
