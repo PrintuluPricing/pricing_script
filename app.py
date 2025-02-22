@@ -11,12 +11,14 @@ from pricing import pricing_calculation
 from rq import Queue
 import redis
 
+
 load_dotenv()
 MONGO_URI = os.environ.get("MONGO_URI", "")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 connection = redis.Connection(REDIS_URL)
-queue = Queue(connection=connection)
+redis_conn = redis.from_url(REDIS_URL)
+queue = Queue(connection=redis_conn)
 
 
 # Configure logging
