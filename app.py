@@ -62,7 +62,7 @@ def connect_db():
 @app.route('/api/combine/<code>', methods=['POST'])
 def calculate_pricing(code):
     task = queue.enqueue(calculate_pricing_job, code)
-    logger.info("Task Started for ", code)
+    logger.info(f"Task Started for {code}")
     return jsonify({"task_id": task.id}), 202
 
 
