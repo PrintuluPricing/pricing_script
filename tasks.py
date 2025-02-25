@@ -5,6 +5,7 @@ import os
 import logging
 from dotenv import load_dotenv
 from datetime import datetime, timezone
+import io
 
 
 load_dotenv()
@@ -33,20 +34,27 @@ except Exception as e:
     raise
 
 
-
 def calculate_pricing_job(code):
     logger.info("Starting Job for Price Calculation")
     combinations = create_combinations(code)
     logger.info("Created Combinations")
-    combinations.to_csv(f"{code}_combinations.csv", index=False)
-    logger.info("Saved Combinations and running Prices")
-    final_prices = pricing_calculation([f"{code}_combinations.csv"])
-    logger.info("Pricing Finished, Saving to Database")
-    post_pricing(final_prices)
-    logger.info("Saved to MongoDB")
+    buffer = io.StringIO()
+    # combinations.to_csv(f"{code}_combinations.csv", index=False)
+    combinations.to_csv(buffer, index=False)
+    buffer.seek(0)
+    logger.info("Created Combinations and running Prices")
+    # final_prices = pricing_calculation([f"{code}_combinations.csv"])
+    final_prices = pricing_calculation(buffer)
+    if final_prices:
+        logger.info("Pricing Finished, Saving to Database")
+        logger.info(final_prices)
+        # post_pricing(final_prices)
+        # logger.info("Saved to MongoDB")
+    else:
+        logger.info(f"{code} generated no prices")
 
 
 def post_pricing(final_prices):
     pricing_collection = db['product_prices']
-    final_prices["created_at"] = datetime.now(timezone.utc)
+    # final_prices["created_at"] = datetime.now(timezone.utc)
     pricing_collection.insert_one(final_prices)

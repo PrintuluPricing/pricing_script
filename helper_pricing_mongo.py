@@ -332,7 +332,7 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
 
     df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
-    df["Extra Costs"] = df["Extra_costs"] * (1 + df["Option Markup"] /100)
+    df["Extra Costs"] = df["Extra_costs"] * (1 + df["Extra Markup"] /100)
     df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
     df["Finishing Costs"] = df["Finishing_costs"] *(1 + df["Finishing Markup"] /100)
     df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
@@ -437,5 +437,4 @@ def get_hanger_length() -> list[float]:
 
 
 if __name__ == "__main__":
-    get_clicks()
     pass

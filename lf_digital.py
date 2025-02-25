@@ -87,9 +87,9 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = calculate_shipping(df)
 
     df["Printing and Paper Markup"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
-    df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Option Markup"]/100)
+    df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Extra Markup"]/100)
     df["LF Refinement Markup"] = df["LF Refinement"] * ( 1 + df["Refinement Markup"]/100)
-    df["LF Finishing Markup"] = df["LF Finishing"] * ( 1 + df["Option Markup"]/100)
+    df["LF Finishing Markup"] = df["LF Finishing"] * ( 1 + df["Finishing Markup"]/100)
     df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Refinement Markup"] + df["LF Finishing Markup"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 

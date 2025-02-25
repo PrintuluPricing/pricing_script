@@ -26,8 +26,8 @@ DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 load_dotenv()
 log_level = logging.INFO
 
-# if DEBUG:
-#    log_level = logging.DEBUG
+if DEBUG:
+    log_level = logging.DEBUG
 
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
@@ -46,19 +46,17 @@ def return_first(args):
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 
-def pricing_calculation(files: list[str]) -> dict[Any, Any]:
+def pricing_calculation(file:str| Any) -> dict[Any, Any]:
 
-    print(f"Started Pricing Calculation : {files}")
-    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
+    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
     # FIXME: Check the consistent column names later
-    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'Ganging Possible']
-
-    file_name = files[0].replace("/", "_")
+    data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'Ganging Possible']
 
     columns = ["productpart", "paper", "format", "pages", "Quantity",
                "colors", "book_binding", "refinement", "finishing", "options", "file_type"]
-    data = pd.concat(pd.read_csv(file, keep_default_na=False) for file in files)
+    data = pd.read_csv(file, keep_default_na=False)
+    logger.info(f"Received {len(data)} combinations")
 
     cat_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options',
                   'SuperCategory', 'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Sheets', 'Extra']
@@ -66,17 +64,15 @@ def pricing_calculation(files: list[str]) -> dict[Any, Any]:
     # FIXME: Check the consistent column names later
     cat_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colour', 'binding', 'refinement', 'finishing', 'extra',
                    'Binding', 'Finishing', 'Paper', 'Colour', 'Refinement', 'Pages', 'Extra']
-    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Option Markup', 'Binding Markup']
+    num_columns = ['Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup']
 
     start = datetime.now()
-    # with open(f"log_{timestamp}.txt", "a") as f:
-    #     f.write(f"Started | {file_name} | {timestamp}  | ")
 
     data[cat_columns] = data[cat_columns].astype('category')
     data[num_columns] = data[num_columns].astype('uint8')
     data["Quantity"] = data["Quantity"].astype('uint32')
     print(f"Casting took {datetime.now() - start}")
-    products = list(set(list(data["Product Code"])))
+    # products = list(set(list(data["Product Code"])))
     data = data.rename({"Product": "Product Code"}, axis=1)
 
     print(len(data))
@@ -169,7 +165,7 @@ def pricing_calculation(files: list[str]) -> dict[Any, Any]:
 
     print("Collecting Data")
     if len(dfs) == 0:
-        print(files, " No Data")
+        print(str(file), " No Data")
     try:
         output_data = pd.concat(dfs)
     except:

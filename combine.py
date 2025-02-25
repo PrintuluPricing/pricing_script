@@ -19,7 +19,7 @@ attributes = attributes.drop(["_id", "categories"], axis=1)
 
 
 df_cols = ['Product Name', 'Product Code', 'Category', 'Pages', 'Finishing', 'Binding', 'Extra', 'Format', 'Quantity',
-           'Refinement', 'Colour', 'Paper', 'Ganging Possible', 'Printing Markup', 'Finishing Markup', 'Binding Markup', 'Option Markup', 'Refinement Markup']
+           'Refinement', 'Colour', 'Paper', 'Ganging Possible', 'Printing Markup', 'Finishing Markup', 'Binding Markup', 'Extra Markup', 'Refinement Markup']
 attributes_cols = ['Pages', 'Finishing', 'Binding', 'Extra',
                    'Format', 'Refinement', 'Colour', 'Paper']
 
@@ -30,7 +30,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     product_data = products.find_one({"product_code": product_code})
     printing_makrup = product_data["markup"]["Printing"]
     binding_markup = product_data["markup"]["Binding"]
-    extra_markup = product_data["markup"]["Option"]
+    extra_markup = product_data["markup"]["Extra"]
     finishing_markup = product_data["markup"]["Finishing"]
     refinement_markup = product_data["markup"]["Refinement"]
     options = [product_data[key] for key in ['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper']]
@@ -38,7 +38,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     product_df = pd.DataFrame(combinations, columns=['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper'])
     product_df["Printing Markup"] = printing_makrup
     product_df["Binding Markup"] = binding_markup
-    product_df["Option Markup"] = extra_markup
+    product_df["Extra Markup"] = extra_markup
     product_df["Finishing Markup"] = finishing_markup
     product_df["Refinement Markup"] = refinement_markup
     product_df["Product Code"] = product_code
