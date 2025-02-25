@@ -47,6 +47,7 @@ def calculate_pricing_job(code):
     if final_prices:
         logger.info("Pricing Finished, Saving to Database")
         logger.info(final_prices)
+        final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
         post_pricing(prices_doc)
         logger.info("Saved to MongoDB")
     else:
