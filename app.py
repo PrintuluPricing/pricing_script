@@ -12,7 +12,6 @@ import subprocess
 load_dotenv()
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 REDIS_URL = "redis://127.0.0.1:6379"
-connection = redis.Connection(REDIS_URL)
 redis_conn = redis.from_url(REDIS_URL)
 queue = Queue(connection=redis_conn)
 
@@ -35,6 +34,7 @@ def calculate_pricing(code):
     task = queue.enqueue(calculate_pricing_job, code)
     logger.info(f"Task Started for {code}")
     subprocess.Popen(["rq", "worker"])
+    logger.info("subprocess started")
     return jsonify({"task_id": task.id}), 202
 
 
@@ -47,7 +47,3 @@ def get_task_status(task_id):
     result = job.result  # This will be None if the job is not complete
 
     return jsonify({'status': status, 'result': result}), 200
-
-
-if __name__ == "__main__":
-    app.run("localhost", 5000, debug=True)
