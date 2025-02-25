@@ -216,7 +216,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     # final_data.to_csv(f"./output/Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
     # print(f"Final Data returned from Main: {type(final_data)}")
     data_to_send = final_data.reset_index()
-    return data_to_send.to_dict()
+    return data_to_send.to_dict(orient='records')
 
 
 if __name__ == "__main__":
