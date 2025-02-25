@@ -6,11 +6,14 @@ import logging
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 import io
+import redis
 
 
 load_dotenv()
 MONGO_URI = os.environ.get("MONGO_URI", "")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+REDIS_URL = os.environ.get("REDIS_URL")
+
 
 # Configure logging
 log_level = logging.INFO
