@@ -11,7 +11,7 @@ import subprocess
 
 load_dotenv()
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
-REDIS_URL = "redis://127.0.0.1:6379"
+REDIS_URL = os.environ.get("REDIS_URL","redis://127.0.0.1:6379")
 redis_conn = redis.from_url(REDIS_URL)
 queue = Queue(connection=redis_conn)
 
