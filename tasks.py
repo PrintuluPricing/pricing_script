@@ -43,11 +43,11 @@ def calculate_pricing_job(code):
     buffer.seek(0)
     logger.info("Created Combinations and running Prices")
     final_prices = pricing_calculation(buffer)
-    prices_doc = {'product_code': code, 'prices': final_prices}
     if final_prices:
         logger.info("Pricing Finished, Saving to Database")
         logger.info(final_prices)
         final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
+        prices_doc = {'product_code': code, 'prices': final_prices}
         post_pricing(prices_doc)
         logger.info("Saved to MongoDB")
     else:
