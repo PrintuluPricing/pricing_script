@@ -28,14 +28,24 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     db = client["Printulu"]
     products = db["products"]
     product_data = products.find_one({"product_code": product_code})
+    rules = product_data.get("incompatibility_rules",[])
+    options = [product_data[key] for key in ['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper']]
+    combinations = list(itertools.product(*options))
+    product_df = pd.DataFrame(combinations, columns=['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper'], dtype='category')
+    for rule in rules:
+        rule_col = rule['type'].lower()
+        attribute = rule['option']
+        for incompatible in rule["incompatible_with"]:
+            incompatible_column = incompatible["type"].lower()
+            incompatible_attribute = incompatible["option"]
+            # Apply Rule
+            product_df = product_df[(product_df[rule_col] == attribute) & (product_df[incompatible_column] == incompatible_attribute)  == False]
+
     printing_makrup = product_data["markup"]["Printing"]
     binding_markup = product_data["markup"]["Binding"]
     extra_markup = product_data["markup"]["Extra"]
     finishing_markup = product_data["markup"]["Finishing"]
     refinement_markup = product_data["markup"]["Refinement"]
-    options = [product_data[key] for key in ['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper']]
-    combinations = list(itertools.product(*options))
-    product_df = pd.DataFrame(combinations, columns=['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper'])
     product_df["Printing Markup"] = printing_makrup
     product_df["Binding Markup"] = binding_markup
     product_df["Extra Markup"] = extra_markup
@@ -60,10 +70,8 @@ def create_combinations(product_code):
             col_codes = merged["code"]
             product_df[col_lookup] = col_codes
             new_cols.append(col_lookup) if col_lookup not in new_cols else None
-    # TODO: Include Negative rules here
     return product_df[new_cols]
 
 
 if __name__ == '__main__':
-    create_combinations("tp_popcorn_box").to_csv("tp_popcorn_box.csv")
     pass

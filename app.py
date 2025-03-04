@@ -25,6 +25,10 @@ if DEBUG:
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
+pymongo_log = logging.getLogger('pymongo')
+
+# Set the logging level to WARNING or ERROR to suppress INFO and DEBUG messages
+pymongo_log.setLevel(logging.WARNING)  # Or logging.ERROR
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
