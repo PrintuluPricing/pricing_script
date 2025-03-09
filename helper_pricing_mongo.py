@@ -25,8 +25,6 @@ categories_space = {
     "LF Digital": {"width": 0.5, "height": 0.5},
 }
 
-INPUT_PRICES_FOLDER = "1BrbtZ82ygpJ6Yu6m0nWboa2KN-rDe7PT"
-
 placements = {}
 BLEED = 0.3
 
