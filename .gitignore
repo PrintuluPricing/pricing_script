@@ -17,3 +17,4 @@ duplicates.txt
 RUN_*
 brochure/*
 .env
+.venv*
