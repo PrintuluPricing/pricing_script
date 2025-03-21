@@ -53,7 +53,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     product_df["Refinement Markup"] = refinement_markup
     product_df["Product Code"] = product_code
     product_df["Product Name"] = product_data["product_name"]
-    product_df["Ganging Possible"] = product_data["ganging_possible"]
+    product_df["Ganging Possible"] = product_data.get("ganging_possible", False)
     return product_df
 
 
