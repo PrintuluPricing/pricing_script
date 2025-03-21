@@ -187,7 +187,11 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
 
     cheapest = output_data[["idx", "Category", "Total Costs"]].groupby(["idx", "Category"]).min("Total Costs")
     cheapest = cheapest.reset_index()
-    cheapest = cheapest.sort_values("Total Costs", ascending=True).drop_duplicates("idx")
+    try:
+        cheapest = cheapest.sort_values("Total Costs", ascending=True).drop_duplicates("idx")
+    except KeyError:
+        logger.debug(f"Total Cost Not Found {file}")
+        logger.debug(f"Cheapest length = {len(cheapest)}")
     cheapest = cheapest[["idx", "Category"]]
     output_data = output_data.merge(cheapest,"inner",on=["idx","Category"])
     del cheapest
