@@ -59,6 +59,7 @@ def calculate_pricing_job(code):
         logger.error(f"{code} failed: {str(e)}")
         collection = db["pricing_logs"]
         collection.insert_one({"timestamp": datetime.now(timezone.utc), "error":str(e), "code":code})
+        raise
 
 
 def post_pricing(final_prices):
