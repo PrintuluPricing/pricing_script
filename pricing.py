@@ -186,10 +186,9 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     output_data = output_data.sort_values("Total Costs", ascending=True)
     output_data = output_data.reset_index(drop=True)
 
-    cheapest = output_data[["idx", "Category", "Total Costs"]].groupby(["idx", "Category"]).min("Total Costs")
-    cheapest = cheapest.reset_index()
-    print(cheapest)
-    # cheapest = cheapest.sort_values("Total Costs", ascending=True).drop_duplicates("idx")
+    cheapest = output_data[["idx", "Category", "Total Costs"]].groupby(["idx", "Category"], as_index=False).min()
+    # TODO: Do we actually need to sort?? the above already gets the cheapest !! Yes we do as one category can have multiple prices maybe
+    cheapest = cheapest.sort_values("Total Costs", ascending=True).drop_duplicates("idx")
     cheapest = cheapest[["idx", "Category"]]
     output_data = output_data.merge(cheapest,"inner",on=["idx","Category"])
     del cheapest
