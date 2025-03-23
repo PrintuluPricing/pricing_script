@@ -6,7 +6,6 @@ import logging
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 import io
-import redis
 
 
 load_dotenv()
@@ -45,16 +44,21 @@ def calculate_pricing_job(code):
     combinations.to_csv(buffer, index=False)
     buffer.seek(0)
     logger.info("Created Combinations and running Prices")
-    final_prices = pricing_calculation(buffer)
-    if final_prices:
-        logger.info("Pricing Finished, Saving to Database")
-        logger.info(final_prices)
-        final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
-        prices_doc = {'product_code': code, 'prices': final_prices}
-        post_pricing(prices_doc)
-        logger.info("Saved to MongoDB")
-    else:
-        logger.info(f"{code} generated no prices")
+    try:
+        final_prices = pricing_calculation(buffer)
+        if final_prices:
+            logger.info("Pricing Finished, Saving to Database")
+            logger.info(final_prices)
+            final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
+            prices_doc = {'product_code': code, 'prices': final_prices}
+            post_pricing(prices_doc)
+            logger.info("Saved to MongoDB")
+        else:
+            logger.info(f"{code} generated no prices")
+    except Exception as e:
+        logger.error(f"{code} failed: {e}")
+        collection = db["pricing_logs"]
+        collection.insert_one({"timestamp": datetime.now(timezone.utc), "error":e, "code":code})
 
 
 def post_pricing(final_prices):
