@@ -56,9 +56,9 @@ def calculate_pricing_job(code):
         else:
             logger.info(f"{code} generated no prices")
     except Exception as e:
-        logger.error(f"{code} failed: {e}")
+        logger.error(f"{code} failed: {str(e)}")
         collection = db["pricing_logs"]
-        collection.insert_one({"timestamp": datetime.now(timezone.utc), "error":e, "code":code})
+        collection.insert_one({"timestamp": datetime.now(timezone.utc), "error":str(e), "code":code})
 
 
 def post_pricing(final_prices):
