@@ -42,7 +42,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["LF Material"]
 
     lf_extra = get_extra()
-    lf_extra = df.merge(lf_extra[["Extra", "supplier", "Quantity"]], "left", left_on=["Extra", "supplier"], right_on=["attribute", "supplier"])
+    lf_extra = df[["Extra", "supplier", "Quantity"]].merge(lf_extra, "left", left_on=["Extra", "supplier"], right_on=["attribute", "supplier"])
 
 
     lf_extra["LF Extra"] = lf_extra["Quantity"] * lf_extra["price"] + lf_extra["setup"]
