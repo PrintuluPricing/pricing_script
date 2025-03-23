@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_weights, get_finishing, get_litho_sf_SQM
+from helper_pricing_mongo import get_weights, get_extra , get_litho_sf_SQM
 from shipping import calculate_shipping
 
 
@@ -12,16 +12,15 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["GSM"] = pd.to_numeric(df["GSM"], errors="coerce")
     df["SQM"] = df["Format"].apply(get_litho_sf_SQM).astype('float32')
 
-    finishing = get_finishing()
-    finishing = finishing[(finishing["value"].isna() == False) & (finishing["Supplier"] != "Quantity")]
-    finishing = finishing.reset_index(drop=True)
+    extra = get_extra()
+    print(extra)
 
-    extra_costs = pd.merge(df[["Quantity", "Extra", "idx"]], finishing, "left", left_on="Extra", right_on="Attribute")
-    extra_costs["Extra_costs"] = extra_costs["Setup-Cost"].fillna(0) + extra_costs["Quantity"] * extra_costs["value"]
+    extra_costs = pd.merge(df[["Quantity", "Extra", "idx"]], extra, "left", left_on="Extra", right_on="attribute")
+    extra_costs["Extra_costs"] = extra_costs["setup"].fillna(0) + extra_costs["Quantity"] * extra_costs["price"]
     extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
 
-    df = pd.merge(df, finishing, "left", left_on="Extra", right_on="Attribute")
-    df["Extra_costs"] = df["Setup-Cost"].fillna(0) + df["Quantity"] * df["value"]
+    df = pd.merge(df, extra, "left", left_on="Extra", right_on="attribute")
+    df["Extra_costs"] = df["setup"].fillna(0) + df["Quantity"] * df["price"]
     df["Extra_costs"] = np.where(df["Extra"] == "None", 0, df["Extra_costs"])
 
     weights = get_weights()
