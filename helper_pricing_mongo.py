@@ -346,8 +346,8 @@ def get_wiro() -> tuple[pd.DataFrame, list[float], list[float]]:
     collection = db["wiro_bindings"]
     wiro_prices = pd.DataFrame(list(collection.find()))
     wiro_prices = wiro_prices.drop("_id", axis=1)
-    wiro_prices["length"] = pd.to_numeric(wiro_prices["length"])
-    wiro_prices["thickness"] = pd.to_numeric(wiro_prices["thickness"])
+    # wiro_prices["length"] = pd.to_numeric(wiro_prices["length"])
+    # wiro_prices["thickness"] = pd.to_numeric(wiro_prices["thickness"])
     wiro_prices["price"] = pd.to_numeric(wiro_prices["price"])
     wiro_prices["setup"] = pd.to_numeric(wiro_prices["setup"])
     wiro_length = list(set(wiro_prices["length"]))
@@ -364,8 +364,8 @@ def get_hanger() -> tuple[pd.DataFrame, list[float], list[float]]:
     collection = db["hanger_bindings"]
     hanger_prices = pd.DataFrame(list(collection.find()))
     hanger_prices = hanger_prices.drop("_id", axis=1)
-    hanger_prices["length"] = pd.to_numeric(hanger_prices["length"])
-    hanger_prices["thickness"] = pd.to_numeric(hanger_prices["thickness"])
+    # hanger_prices["length"] = pd.to_numeric(hanger_prices["length"])
+    # hanger_prices["thickness"] = pd.to_numeric(hanger_prices["thickness"])
     hanger_prices["price"] = pd.to_numeric(hanger_prices["price"])
     hanger_prices["setup"] = pd.to_numeric(hanger_prices["setup"])
     hanger_length = list(set(hanger_prices["length"]))
@@ -382,8 +382,8 @@ def get_pur() -> tuple[pd.DataFrame, list[float], list[float]]:
     collection = db["pur_bindings"]
     pur_prices = pd.DataFrame(list(collection.find()))
     pur_prices = pur_prices.drop("_id", axis=1)
-    pur_prices["quantity"] = pd.to_numeric(pur_prices["quantity"])
-    pur_prices["thickness"] = pd.to_numeric(pur_prices["thickness"])
+    # pur_prices["quantity"] = pd.to_numeric(pur_prices["quantity"])
+    # pur_prices["thickness"] = pd.to_numeric(pur_prices["thickness"])
     pur_prices["price"] = pd.to_numeric(pur_prices["price"])
     pur_prices["setup"] = pd.to_numeric(pur_prices["setup"])
     pur_quantity = list(set(pur_prices["quantity"]))
@@ -446,6 +446,4 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    custom = get_custom()
-    print(custom.dtypes)
     pass
