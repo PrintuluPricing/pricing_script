@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_lf_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_lf_refinement, get_weights, get_finishing
+from helper_pricing_mongo import get_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_refinement, get_weights, get_finishing
 from shipping import calculate_shipping
 
 # NOTE: Constants
@@ -41,21 +41,24 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Material"] = df["LF Material"] * df["LF Double"]
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["LF Material"]
 
-    lf_extra = get_lf_extra()
-    lf_extra = df.merge(lf_extra, "left", on=["Extra", "supplier"])
+    lf_extra = get_extra()
+    lf_extra = df.merge(lf_extra[["Extra", "supplier", "Quantity"]], "left", left_on=["Extra", "supplier"], right_on=["attribute", "supplier"])
+
+
+    lf_extra["LF Extra"] = lf_extra["Quantity"] * lf_extra["price"] + lf_extra["setup"]
 
     df["LF Extra"] = lf_extra["LF Extra"]
     df["LF Extra"] = np.where(df["LF Extra"] > 0, df["LF Extra"] + FIXED_EXTRA_HANDLING, df["LF Extra"])
     df["LF Extra"] = np.where(df["Extra"] == "None", 0, df["LF Extra"])
     df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
-    lf_refinement = get_lf_refinement()
+    lf_refinement = get_refinement()
     lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "supplier"])
 
-    df["LF Refinement"] = lf_refinement["LF Refinement"]
-    df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
+    df["LF Refinement"] = lf_refinement["price"]
     df["LF Refinement"] = np.where(df["Refinement"] == "None", 0, df["LF Refinement"])
     df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
+    df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
 
     # TODO: Calculate Finishing from MONGODB after pushing the data
 
