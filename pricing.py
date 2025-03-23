@@ -110,7 +110,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
     gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
-    custom_data = data[data["Category"] == "Custom"]
+    custom_data = data[data["Category"].isin(["Litho", "SF Digital", "Gift"]) == False]
     print("Split categories")
     del data
 
