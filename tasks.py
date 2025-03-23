@@ -55,6 +55,7 @@ def calculate_pricing_job(code):
             logger.info("Saved to MongoDB")
         else:
             logger.info(f"{code} generated no prices")
+            logger.error(f"{len(final_prices}")
             collection = db["pricing_logs"]
             collection.insert_one({"timestamp": datetime.now(timezone.utc), "output":final_prices, "code":code})
             raise
