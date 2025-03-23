@@ -177,6 +177,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     # output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
     output_data = output_data[output_data["Total Costs"].isna() == False]
+    failed_data = output_data[output_data["Total Costs"].isna()]
     print(len(output_data))
     # NOTE: First remove_duplicates from the same combination and keep one for each supplier with the lowest cost
     # Need to check for the same category
@@ -205,7 +206,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     print(len(output_data))
     if len(output_data) == 0:
         logger.error("No Data")
-        raise
+        return ("failed",failed_data.to_dict(orient='records'))
     output_data = output_data.reset_index(drop=True)
     # output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     output_data = output_data.sort_values("Total Costs", ascending=False)
@@ -220,7 +221,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     # final_data.to_csv(f"./output/Final Data  {products[0] if len(products) == 1 else None} - {timestamp}.csv")
     # print(f"Final Data returned from Main: {type(final_data)}")
     data_to_send = final_data.reset_index()
-    return data_to_send.to_dict(orient='records')
+    return (success, data_to_send.to_dict(orient='records'))
 
 
 if __name__ == "__main__":

@@ -45,8 +45,8 @@ def calculate_pricing_job(code):
     buffer.seek(0)
     logger.info("Created Combinations and running Prices")
     try:
-        final_prices = pricing_calculation(buffer)
-        if final_prices:
+        (code, final_prices) = pricing_calculation(buffer)
+        if code == "success":
             logger.info("Pricing Finished, Saving to Database")
             logger.info(final_prices)
             final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
@@ -55,6 +55,9 @@ def calculate_pricing_job(code):
             logger.info("Saved to MongoDB")
         else:
             logger.info(f"{code} generated no prices")
+            collection = db["pricing_logs"]
+            collection.insert_one({"timestamp": datetime.now(timezone.utc), "output":final_prices, "code":code})
+
     except Exception as e:
         logger.error(f"{code} failed: {str(e)}")
         collection = db["pricing_logs"]
