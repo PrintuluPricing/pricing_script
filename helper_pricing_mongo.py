@@ -434,5 +434,18 @@ def get_hanger_length() -> list[float]:
     return hanger_length
 
 
+def get_custom() -> pd.DataFrame:
+    if "custom" in cached_data.keys():
+        return cached_data["custom"]
+    collection = db["custom_prices"]
+    custom = pd.DataFrame(list(collection.find()))
+    custom = custom.drop("_id", axis=1)
+    custom[["unit_price", "unit_kg", "setup"]] = custom[["unit_price", "unit_kg", "setup"]].astype(float)
+    cached_data["custom"] = custom
+    return custom
+
+
 if __name__ == "__main__":
+    custom = get_custom()
+    print(custom.dtypes)
     pass
