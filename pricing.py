@@ -206,7 +206,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     print(len(output_data))
     if len(output_data) == 0:
         logger.error("No Data")
-        return ("failed",failed_data.count().to_dict(orient='records'))
+        return ("failed",failed_data.to_dict(orient='records'))
     output_data = output_data.reset_index(drop=True)
     # output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     output_data = output_data.sort_values("Total Costs", ascending=False)

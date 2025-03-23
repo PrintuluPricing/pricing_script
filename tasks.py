@@ -57,7 +57,7 @@ def calculate_pricing_job(code):
             logger.info(f"{code} generated no prices")
             collection = db["pricing_logs"]
             collection.insert_one({"timestamp": datetime.now(timezone.utc), "output":final_prices, "code":code})
-            raise
+            raise ValueError("No Data Calculated")
 
     except Exception as e:
         logger.error(f"{code} failed: {str(e)}")
