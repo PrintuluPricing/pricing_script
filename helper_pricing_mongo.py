@@ -167,7 +167,7 @@ def get_lf_material() -> pd.DataFrame:
     lf_material["price"] = pd.to_numeric(lf_material["price"]).astype("float16")
     lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
     lf_material["cutting"] = pd.to_numeric(lf_material["cutting"]).astype("float16")
-    lf_material = lf_material.rename({"price": "LF Material", "paper": "Paper", "waste": "Waste %", "cutting": "LF Cutting"}, axis=1)
+    lf_material = lf_material.rename({"price": "LF Material", "attribute": "Paper", "waste": "Waste %", "cutting": "LF Cutting"}, axis=1)
     lf_material = lf_material[lf_material["supplier"].isin(REMOVED_SUPPLIERS) == False]
     lf_material[["supplier", "Paper"]] = lf_material[["supplier", "Paper"]].astype("category")
     cached_data["lf_material"] = lf_material
@@ -278,7 +278,7 @@ def get_refinement() -> pd.DataFrame:
     refinement = pd.DataFrame(list(collection.find()))
     refinement = refinement.drop("_id", axis=1)
     refinement["price"] = refinement["price"].astype("float16")
-    refinement = refinement.rename({"attribute": "Refinement", "price": "Refinement_costs"}, axis=1)
+    refinement = refinement.rename({"attribute": "Refinement"}, axis=1)
     cached_data["refinement"] = refinement
     return refinement
 
@@ -325,7 +325,7 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.reset_index(drop=True)
     df = pd.merge(df, refinement, "left", on=["supplier", "Refinement"])
-    df["Refinement_costs"] = df["Refinement_costs"] * df["SQM"] * df["Total Sheets"]
+    df["Refinement_costs"] = df["price"] * df["SQM"] * df["Total Sheets"]
     df["Refinement_costs"] = np.where(df["Refinement_costs"]> 0, df["Refinement_costs"] + FIXED_REFINEMENT_HANDLING, 0)
     df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
 
