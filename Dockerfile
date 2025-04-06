@@ -10,7 +10,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-VOLUME /prices
+# VOLUME /prices
 EXPOSE 5000
 
 
