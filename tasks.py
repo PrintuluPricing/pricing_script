@@ -45,7 +45,7 @@ def calculate_pricing_job(code):
     buffer.seek(0)
     logger.info("Created Combinations and running Prices")
     try:
-        (success_code, final_prices) = pricing_calculation(buffer)
+        (success_code, final_prices, final_prices_df) = pricing_calculation(buffer)
         if success_code == "success":
             logger.info("Pricing Finished, Saving to Database")
             logger.info(final_prices)
@@ -53,6 +53,7 @@ def calculate_pricing_job(code):
             prices_doc = {'product_code': code, 'prices': final_prices}
             post_pricing(prices_doc)
             logger.info("Saved to MongoDB")
+            final_prices_df.to_csv(f"{code}_prices.csv", index=False)
         else:
             logger.info(f"{code} generated no prices")
             collection = db["pricing_logs"]
