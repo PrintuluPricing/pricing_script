@@ -37,9 +37,9 @@ CORS(app)
 @app.route('/api/calculate/<code>', methods=['POST'])
 def calculate_pricing(code):
     task = queue.enqueue(calculate_pricing_job, code, job_timeout=1500)
-    logger.info(f"Task Started for {code}")
-    subprocess.Popen(["rq", "worker"])
-    logger.info("subprocess started")
+    # logger.info(f"Task Started for {code}")
+    # subprocess.Popen(["rq", "worker"])
+    # logger.info("subprocess started")
     return jsonify({"task_id": task.id}), 202
 
 

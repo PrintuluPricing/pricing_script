@@ -6,6 +6,7 @@ import logging
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 import io
+import pandas as pd
 
 
 load_dotenv()
@@ -27,7 +28,6 @@ logger = logging.getLogger(__name__)
 try:
     logger.info("Connecting to MongoDB...")
     client = MongoClient(MONGO_URI)
-    # Test connection
     client.admin.command('ping')
     logger.info("Successfully connected to MongoDB")
     db = client['Printulu']
@@ -37,7 +37,7 @@ except Exception as e:
 
 
 def calculate_pricing_job(code):
-    logger.info("Starting Job for Price Calculation")
+    logger.info(f"Starting Job for Price Calculation {code}")
     combinations = create_combinations(code)
     logger.info("Created Combinations")
     buffer = io.StringIO()
@@ -53,7 +53,11 @@ def calculate_pricing_job(code):
             prices_doc = {'product_code': code, 'prices': final_prices}
             post_pricing(prices_doc)
             logger.info("Saved to MongoDB")
-            final_prices_df.to_csv(f"{code}_prices.csv", index=False)
+            logger.debug("Saving CSV File")
+            print("Saving Prices to Csv")
+            final_prices_df.to_csv(f"./prices/{code}_prices.csv")
+            final_prices_df.to_csv(f"{code}_prices.csv")
+            logger.debug("Saved CSV file")
         else:
             logger.info(f"{code} generated no prices")
             collection = db["pricing_logs"]
