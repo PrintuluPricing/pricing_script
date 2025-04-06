@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 from rq import Queue
 import redis
 from tasks import calculate_pricing_job
-import subprocess
+# import subprocess
+import glob
 
 
 load_dotenv()
@@ -52,3 +53,10 @@ def get_task_status(task_id):
     result = job.result  # This will be None if the job is not complete
 
     return jsonify({'status': status, 'result': result}), 200
+
+
+@app.route('/api/files', methods=['GET'])
+def get_files():
+    files = glob.glob("./prices/*")
+
+    return jsonify({'files': str(files)}), 200
