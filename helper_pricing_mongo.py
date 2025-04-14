@@ -4,6 +4,11 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import re
+import logging
+
+
+pymongo_logger = logging.getLogger('pymongo')
+pymongo_logger.setLevel(logging.INFO)
 
 load_dotenv()
 

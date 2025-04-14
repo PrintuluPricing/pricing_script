@@ -27,10 +27,8 @@ if DEBUG:
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
-pymongo_log = logging.getLogger('pymongo')
-
-# Set the logging level to WARNING or ERROR to suppress INFO and DEBUG messages
-pymongo_log.setLevel(logging.WARNING)  # Or logging.ERROR
+pymongo_logger = logging.getLogger('pymongo')
+pymongo_logger.setLevel(logging.INFO)
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
@@ -60,3 +58,22 @@ def get_files():
     files = glob.glob("./prices/*")
 
     return jsonify({'files': str(files)}), 200
+
+
+@app.route('/api/download/<product_code>', methods=['GET'])
+def download_prices(product_code):
+    file = f"./prices/{product_code}_prices.csv"
+
+
+
+    return jsonify({'files': "Todo"}), 200
+
+
+
+@app.route('/api/download-all/', methods=['GET'])
+def download_prices(product_code):
+    files = glob.glob(".prices/*_prices.csv")
+    
+
+    return jsonify({'files': "Todo"}), 200
+
