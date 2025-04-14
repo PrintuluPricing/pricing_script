@@ -3,9 +3,18 @@ import psycopg2
 import pandas as pd
 import io
 import os
-import numpy as np
+import logging
 
 load_dotenv()
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+
+log_level = logging.INFO
+
+if DEBUG:
+    log_level = logging.DEBUG
+
+logging.basicConfig(level=log_level)
+logger = logging.getLogger(__name__)
 
 SQL_URL = os.environ.get('SQL_URL')
 
@@ -55,6 +64,7 @@ def get_sql_columns(table_name:str):
 
 def insert_dataframe_to_postgres(df, table_name, identifier=None):
     # TODO: Based on identifier exclude duplicates
+    logger.info("Preparing Adding the data to SQL")
 
     if identifier != None:
         pass
@@ -64,7 +74,7 @@ def insert_dataframe_to_postgres(df, table_name, identifier=None):
     df.columns = [col.replace(" ", "_").lower() for col in df.columns]
     df = df[[col for col in df.columns if col in sql_columns]]
     for col in df.columns:
-        if df[col].dtype != object:
+        if df[col].dtype not in ["object", "category"]:
             df[col] = df[col].fillna(0)
 
 
@@ -74,8 +84,9 @@ def insert_dataframe_to_postgres(df, table_name, identifier=None):
 
     with connection.cursor() as cur:
         cur.copy_from(buff, table_name, sep="|", columns=cols)
-        print("copying done")
+        logging.info("copying done")
     connection.commit()
+    logger.info("Added the data to SQL")
 
 
 if __name__ == "__main__":

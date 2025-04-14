@@ -15,6 +15,7 @@ import numpy as np
 from dotenv import load_dotenv
 import os
 from typing import Any
+from sql import insert_dataframe_to_postgres
 
 warnings.simplefilter(action="ignore")
 
@@ -47,7 +48,7 @@ def return_first(args):
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 
-def pricing_calculation(file:str| Any) -> dict[Any, Any]:
+def pricing_calculation(file:str| Any, test=False) -> dict[Any, Any]:
 
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
@@ -72,12 +73,12 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     data[cat_columns] = data[cat_columns].astype('category')
     data[num_columns] = data[num_columns].astype('uint8')
     data["Quantity"] = data["Quantity"].astype('uint32')
-    print(f"Casting took {datetime.now() - start}")
+    logger.info(f"Casting took {datetime.now() - start}")
     # products = list(set(list(data["Product Code"])))
     data = data.rename({"Product": "Product Code"}, axis=1)
 
-    print(len(data))
-    print("Removing Duplicates")
+    logger.info(str(len(data)))
+    logger.info("Removing Duplicates")
     data = data.drop_duplicates(["Category","Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
     unique = data.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]).reset_index(drop=True)
     unique = unique[["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]]
@@ -89,13 +90,13 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     data = data.reset_index(drop=True)
     data = data.merge(unique, "left", on=["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
     del unique
-    print("Removed Duplicates")
+    logger.info("Removed Duplicates")
 
     # with open(f"log_{timestamp}.txt", "a") as f:
     #     f.write(f" {unique_combinations} - unique records  | ")
-    print(unique_combinations)
+    logger.info(f"Unique Combinations:  {str(unique_combinations)}")
     categories = list(set(list(data["Category"])))
-    print("Categories ", categories)
+    logger.info(f"Categories {str(categories)}")
     data["file_type"] = "#"
     data["file_type"] = data["file_type"].astype('category')
     data["PagesNumber"] = data["pages"].str.extract(r"(\d+)")
@@ -106,22 +107,22 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     data["Length"] = data["Height (cm)"] * 10
     data["Length"] = data["Length"].astype('float16')
     data["Format"] = data["Format"].astype("category")
-    print("Adjusted all data")
+    logger.info("Adjusted all data")
 
     lf_digital_data = data[data["Category"] == "LF Digital"]
     litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
     gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
     custom_data = data[data["Category"].isin(["Litho", "SF Digital", "Gift"]) == False]
-    print("Split categories")
+    logger.info("Split categories")
     del data
 
     dfs = []
     if "Litho" in categories or "SF Digital" in categories:
-        print("Adjusting Litho / SF Digital")
+        logger.info("Adjusting Litho / SF Digital")
         litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
-        print("Finished Litho / SF Digital")
+        logger.info("Finished Litho / SF Digital")
 
-        print("Splitting Litho / SF Digital")
+        logger.info("Splitting Litho / SF Digital")
         litho_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "Litho"].reset_index(drop=True)
         sf_digital_data = litho_sf_digital_data[litho_sf_digital_data["Category"] == "SF Digital"]
         litho_data = litho_data.reset_index(drop=True)
@@ -129,9 +130,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
 
         if len(litho_data) > 0:
             litho_data = litho.calculation(litho_data)
-            # litho_data = calculate_binding(litho_data)
-            # litho_data = calculate_attributes(litho_data, finishing)
-            print("Litho Data!! ", len(litho_data))
+            logger.info(f"Litho Data!! {str(len(litho_data))}")
 
             if len(litho_data) > 0:
                 dfs.append(litho_data)
@@ -148,7 +147,7 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
                 del sf_digital_data
 
     if "LF Digital" in categories:
-        print("Started LF Digital")
+        logger.info("Started LF Digital")
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         if len(lf_digital_data) > 0:
             dfs.append(lf_digital_data)
@@ -158,23 +157,22 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
         if len(gifts_data) > 0:
             dfs.append(gifts_data)
 
-    # FIXME: This needs to be updated
     if "Custom" in categories:
         custom_data = custom.calculation(custom_data)
-        print(len(custom_data), "Len Custom Data")
+        logger.info( f"{str(len(custom_data))} Len Custom Data")
         if len(custom_data) > 0:
             dfs.append(custom_data)
 
-    print("Collecting Data")
+    logger.info("Collecting Data")
     if len(dfs) == 0:
-        print(str(file), " No Data")
+        logger.info( f"{str(file)} No Data")
     try:
         output_data = pd.concat(dfs)
     except Exception as e:
         return ("Failed", {"df": "Concat Failed"})
-    output_data = output_data.reset_index(drop=True)
-    print(len(output_data), ": Len Output Data")
-    print("Collected All")
+    output_data = output_data.reset_index(drop=True).rename({"Product Code": "productpart"}, axis=1)
+    logger.info(f"{str(len(output_data))}: Len Output Data")
+    logger.info("Collected All")
     del dfs
     # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     # output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
@@ -199,21 +197,33 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
     output_data = output_data.rename({"Product Code":"productpart", "colour":"colors", "binding":"book_binding", "extra": "options"}, axis=1)
 
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "supplier", "Quantity"])
-    print(len(output_data))
+    logger.info(f"{str(len(output_data))}")
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    # with open(f"log_{timestamp}.txt", "a") as f:
-    #     f.write(f"Finished | {len(output_data)} - unique records \n")
-    print(len(output_data))
+    logger.info(f"len(output_data)")
+
+
     if len(output_data) == 0:
         logger.error("No Data")
-            # return ("failed",failed_data.to_dict(orient='records'))
+        if test:
+            product_code = list(set(failed_data["productpart"]))[0]
+            failed_data.to_csv(f"./testing/{product_code}_failed.csv")
         return ("failed",failed_data.isna().sum().to_dict())
     output_data = output_data.reset_index(drop=True)
     # output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(columns)
     output_data = output_data.reset_index(drop=True)
+    # NOTE: Creating a SQL Table for the prices starts here - take this information only: 
+    # Product Code, Quantity, Paper, Refinement, Finishing, Colour, Extra, Supplier, Binding, Printing Price, Refinement Price, Binding Price, Delivery Charges, Extra Price, 
+    logger.info("Slicing the dataframe")
+    sql_data = output_data[["productpart","Category","Pages","Finishing","Binding","Extra","Format","Quantity","Refinement","Colour","Paper","supplier","Printing and Paper Costs","Printing and Paper incl Markup","Total Weight","Shipping Costs","Refinement Costs","Extra Costs","Binding Costs","Finishing Costs","Total Printing Costs","Total Costs"]]
+    sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
+    logger.info("Sliced the dataframe")
+    insert_dataframe_to_postgres(sql_data,"pricing")
+
+
+
     output_data["price"] = 1
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
     output_data["Unit Price"] = np.round(output_data["Unit Price"], 2).astype("float32")
@@ -225,11 +235,11 @@ def pricing_calculation(file:str| Any) -> dict[Any, Any]:
 
 if __name__ == "__main__":
     files = glob.glob("./*tp*combinations.csv")
-    print(files)
+    logger.info(f"{files}")
     if len(loading_options()) > 0:
         files = loading_options()
     for file in files:
         try:
             main([file])
         except Exception as e:
-            print(e)
+            logger.info(f"{e}")
