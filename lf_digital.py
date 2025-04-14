@@ -89,11 +89,12 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df = calculate_shipping(df)
 
-    df["Printing and Paper Markup"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
-    df["LF Extra Markup"] = df["LF Extra"] * ( 1 + df["Extra Markup"]/100)
-    df["LF Refinement Markup"] = df["LF Refinement"] * ( 1 + df["Refinement Markup"]/100)
-    df["LF Finishing Markup"] = df["LF Finishing"] * ( 1 + df["Finishing Markup"]/100)
-    df["Total Costs"] = df["Printing and Paper Markup"] + df["LF Extra Markup"] + df["Refinement Markup"] + df["LF Finishing Markup"]
+    df["Total Printing Costs"] = df["Printing and Paper Costs"] * (1 + df["Printing Markup"]/100)
+    df["Extra Costs"] = df["LF Extra"] * ( 1 + df["Extra Markup"]/100)
+    df["Refinement Costs"] = df["LF Refinement"] * ( 1 + df["Refinement Markup"]/100)
+    df["Finishing Costs"] = df["LF Finishing"] * ( 1 + df["Finishing Markup"]/100)
+    df["Binding Costs"] = 0  # FIX: What about LF Binding??
+    df["Total Costs"] = df["Total Printing Costs"] + df["Extra Costs"] + df["Refinement Costs"] + df["Finishing Costs"] + df["Binding Costs"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
     df["Total Costs"] = df["Total Costs"] + df["Shipping Costs"]
