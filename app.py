@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import logging
@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from rq import Queue
 import redis
 from tasks import calculate_pricing_job
-# import subprocess
 import glob
 
 
@@ -39,6 +38,15 @@ def calculate_pricing(code):
     # logger.info(f"Task Started for {code}")
     # subprocess.Popen(["rq", "worker"])
     # logger.info("subprocess started")
+    return jsonify({"task_id": task.id}), 202
+
+
+@app.route('/api/generate_pricing', methods=['POST'])
+def generate_pricing():
+    body = request.json
+    product_code = body.get("product_code")
+    user_email = body.get("user_email", "")
+    task = queue.enqueue(calculate_pricing_job, product_code, job_timeout=1500)
     return jsonify({"task_id": task.id}), 202
 
 
