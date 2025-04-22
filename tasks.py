@@ -14,7 +14,6 @@ MONGO_URI = os.environ.get("MONGO_URI", "")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 REDIS_URL = os.environ.get("REDIS_URL")
 
-
 # Configure logging
 log_level = logging.INFO
 
@@ -34,6 +33,8 @@ try:
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {str(e)}")
     raise
+
+print("Mongo DB Connected")
 
 
 def calculate_pricing_job(code):
@@ -74,4 +75,20 @@ def calculate_pricing_job(code):
 def post_pricing(final_prices):
     pricing_collection = db['product_prices']
     final_prices["created_at"] = datetime.now(timezone.utc)
+    final_prices["version"] = get_last_version(final_prices["product_code"]) + 1
     pricing_collection.insert_one(final_prices)
+
+
+def get_last_version(product_code):
+    pricing_collection = db['product_prices']
+    product_prices = list(pricing_collection.find({"product_code":product_code}))
+    if len(product_prices) == 0:
+        return 0
+    product_prices.sort(key=lambda x:x.get("version",0) if x!= None else 0, reverse=True)
+    last_version = product_prices[0]
+    print(last_version)
+    return last_version.get("version")
+
+
+if __name__ == "__main__":
+    pass
