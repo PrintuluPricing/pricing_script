@@ -69,8 +69,9 @@ def get_files():
 def download_prices(product_code):
     product_prices = glob.glob(f"./prices/{product_code}_prices-*.csv")
     product_prices.sort(key= lambda x: x.split("-")[1].split(".")[0], reverse=True)
-    latest_file = product_prices[0]
-    return latest_file, 200
+    latest_file = product_prices[0].replace("./prices/","")
+    directory = os.path.join(app.root_path, "prices")
+    return send_from_directory(directory, latest_file, as_attachment=True)
 
 
 @app.route('/api/download-all/', methods=['GET'])
