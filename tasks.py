@@ -52,12 +52,12 @@ def calculate_pricing_job(code):
             logger.info(final_prices)
             final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
             prices_doc = {'product_code': code, 'prices': final_prices}
-            post_pricing(prices_doc)
+            version = get_last_version("product_code") + 1
+            post_pricing(prices_doc, version)
             logger.info("Saved to MongoDB")
             logger.debug("Saving CSV File")
             print("Saving Prices to Csv")
-            final_prices_df.to_csv(f"./prices/{code}_prices.csv")
-            final_prices_df.to_csv(f"{code}_prices.csv")
+            final_prices_df.to_csv(f"./prices/{code}_prices-{version}.csv", sep=";")
             logger.debug("Saved CSV file")
         else:
             logger.info(f"{code} generated no prices")
@@ -72,10 +72,10 @@ def calculate_pricing_job(code):
         raise
 
 
-def post_pricing(final_prices):
+def post_pricing(final_prices, version):
     pricing_collection = db['product_prices']
     final_prices["created_at"] = datetime.now(timezone.utc)
-    final_prices["version"] = get_last_version(final_prices["product_code"]) + 1
+    final_prices["version"] = version
     pricing_collection.insert_one(final_prices)
 
 
