@@ -240,6 +240,7 @@ def get_litho_utilization()-> pd.DataFrame:
     litho_utilization = pd.DataFrame(list(collection.find()))
     litho_utilization = litho_utilization.drop(["_id"], axis=1)
     litho_utilization["utilization"] = pd.to_numeric(litho_utilization["utilization"], errors="coerce").astype("float16")
+    litho_utilization["utilization"] = litho_utilization["utilization"] / 100
     litho_utilization = litho_utilization.rename({"paper": "Paper", "paper_code": "Paper Code"}, axis=1)
     litho_utilization[["sheet_size", "Paper", "Paper Code"]] = litho_utilization[["sheet_size", "Paper", "Paper Code"]].astype("category")
     cached_data["litho_utilization"] = litho_utilization
