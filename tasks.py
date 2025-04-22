@@ -34,8 +34,6 @@ except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {str(e)}")
     raise
 
-print("Mongo DB Connected")
-
 
 def calculate_pricing_job(code):
     logger.info(f"Starting Job for Price Calculation {code}")
@@ -49,7 +47,6 @@ def calculate_pricing_job(code):
         (success_code, final_prices, final_prices_df) = pricing_calculation(buffer)
         if success_code == "success":
             logger.info("Pricing Finished, Saving to Database")
-            logger.info(final_prices)
             final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
             prices_doc = {'product_code': code, 'prices': final_prices}
             version = get_last_version(code) + 1
@@ -85,7 +82,6 @@ def get_last_version(product_code):
         return 0
     product_prices.sort(key=lambda x:x.get("version",0) if x!= None else 0, reverse=True)
     last_version = product_prices[0]
-    print(last_version)
     return last_version.get("version")
 
 
