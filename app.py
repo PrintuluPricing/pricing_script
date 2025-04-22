@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import os
 import logging
@@ -69,8 +69,10 @@ def get_files():
 def download_prices(product_code):
     # final_prices_df.to_csv(f"./prices/{code}_prices-{version}.csv", sep=";")
     product_prices = glob.glob(f"./prices/{product_code}_prices-*.csv")
-
-    return jsonify({'files': product_prices[0]}), 200
+    product_prices.sort(key= lambda x: x.split("-")[1].split(".")[0], reverse=True)
+    latest_file = product_prices[0]
+    directory = os.path.join(app.root_path, "prices")
+    return send_from_directory(directory, latest_file, as_attachment=True)
 
 
 @app.route('/api/download-all/', methods=['GET'])
