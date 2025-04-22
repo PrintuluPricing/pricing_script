@@ -35,9 +35,6 @@ CORS(app)
 @app.route('/api/calculate/<code>', methods=['POST'])
 def calculate_pricing(code):
     task = queue.enqueue(calculate_pricing_job, code, job_timeout=1500)
-    # logger.info(f"Task Started for {code}")
-    # subprocess.Popen(["rq", "worker"])
-    # logger.info("subprocess started")
     return jsonify({"task_id": task.id}), 202
 
 
@@ -70,18 +67,14 @@ def get_files():
 
 @app.route('/api/download/<product_code>', methods=['GET'])
 def download_prices(product_code):
-    file = f"./prices/{product_code}_prices.csv"
+    # final_prices_df.to_csv(f"./prices/{code}_prices-{version}.csv", sep=";")
+    product_prices = glob.glob("./prices/{product_code}_prices-*.csv")
 
-
-
-    return jsonify({'files': "Todo"}), 200
-
+    return jsonify({'files': product_prices[0]}), 200
 
 
 @app.route('/api/download-all/', methods=['GET'])
-def download_prices(product_code):
-    files = glob.glob(".prices/*_prices.csv")
-    
+def download_all_prices():
+    files = glob.glob(".prices/*_prices-*.csv")
 
     return jsonify({'files': "Todo"}), 200
-

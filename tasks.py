@@ -52,13 +52,12 @@ def calculate_pricing_job(code):
             logger.info(final_prices)
             final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
             prices_doc = {'product_code': code, 'prices': final_prices}
-            version = get_last_version("product_code") + 1
+            version = get_last_version(code) + 1
             post_pricing(prices_doc, version)
             logger.info("Saved to MongoDB")
             logger.debug("Saving CSV File")
-            print("Saving Prices to Csv")
+            logger.info(f"Saving csv file: ./prices/{code}_prices-{version}.csv")
             final_prices_df.to_csv(f"./prices/{code}_prices-{version}.csv", sep=";")
-            logger.debug("Saved CSV file")
         else:
             logger.info(f"{code} generated no prices")
             collection = db["pricing_logs"]
