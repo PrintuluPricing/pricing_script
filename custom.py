@@ -8,7 +8,7 @@ from shipping import calculate_shipping
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     custom = get_custom()
     print(custom.columns)
-    df = df.rename({"Product Code": "productpart"}, axis=1)
+    df = df.rename({"Product Code": "product_code"}, axis=1)
     print(df.columns)
     df = df.merge(custom, "left", on=["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra" ])
     df["supplier"] = "Any"
