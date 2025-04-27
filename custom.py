@@ -10,7 +10,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print(custom.columns)
     df = df.rename({"Product Code": "product_code"}, axis=1)
     print(df.columns)
-    df = df.merge(custom, "left", on=["productpart", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra" ])
+    df = df.merge(custom, "left", on=["product_code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra" ])
     df["supplier"] = "Any"
 
     df["Total Costs"] = df["Quantity"] * df["unit_price"] + df["setup"]
@@ -20,5 +20,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])
     df["Shipping Costs"] = np.where(df["Shipping Costs"] < 100, 100, df["Shipping Costs"]) 
+    df = df.rename({"product_code": "productpart"}, axis=1)
     return df
 
