@@ -3,9 +3,11 @@ from pymongo import MongoClient
 import itertools
 from dotenv import load_dotenv
 import os
+import logging
 
 load_dotenv()
 
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 MONGO_URI = os.environ["MONGO_URI"]
 client = MongoClient(MONGO_URI)
 
@@ -16,6 +18,14 @@ pd.set_option('display.width', 5000)
 attributes = client["Printulu"]["attributes"]
 attributes = pd.DataFrame(attributes.find({}))
 attributes = attributes.drop(["_id", "categories"], axis=1)
+
+
+log_level = logging.INFO
+if DEBUG:
+    log_level = logging.DEBUG
+
+logging.basicConfig(level=log_level)
+logger = logging.getLogger(__name__)
 
 
 df_cols = ['Product Name', 'Product Code', 'Category', 'Pages', 'Finishing', 'Binding', 'Extra', 'Format', 'Quantity',
@@ -70,6 +80,9 @@ def create_combinations(product_code):
             col_codes = merged["code"]
             product_df[col_lookup] = col_codes
             new_cols.append(col_lookup) if col_lookup not in new_cols else None
+    if product_df.isna().sum().sum() > 0:
+        logger.error(product_df.isna().sum()[product_df.isna().sum() > 0])
+        raise Exception("Some Codes Weren't Found")
     return product_df[new_cols]
 
 
