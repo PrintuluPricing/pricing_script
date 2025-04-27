@@ -48,7 +48,7 @@ def return_first(args):
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 
-def pricing_calculation(file:str| Any, test=False) -> dict[Any, Any]:
+def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[Any, Any]:
 
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
@@ -172,6 +172,8 @@ def pricing_calculation(file:str| Any, test=False) -> dict[Any, Any]:
         return ("Failed", {"df": "Concat Failed"})
     output_data = output_data.reset_index(drop=True).rename({"Product Code": "productpart"}, axis=1)
     logger.info(f"{str(len(output_data))}: Len Output Data")
+    if test:
+        output_data.to_csv(f"{product_code} output_test.csv", index=False)
     logger.info("Collected All")
     del dfs
     # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
