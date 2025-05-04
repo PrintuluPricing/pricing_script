@@ -82,7 +82,7 @@ def create_combinations(product_code):
             new_cols.append(col_lookup) if col_lookup not in new_cols else None
     if product_df.isna().sum().sum() > 0:
         logger.error(product_df.isna().sum()[product_df.isna().sum() > 0])
-        raise Exception("Some Codes Weren't Found")
+        raise Exception(f"Some Codes Weren't Found : {product_df.isna().sum()[product_df.isna().sum() > 0]}")
     return product_df[new_cols]
 
 
