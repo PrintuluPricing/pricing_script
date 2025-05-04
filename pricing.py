@@ -169,7 +169,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     try:
         output_data = pd.concat(dfs)
     except Exception as e:
-        return ("Failed", {"df": "Concat Failed"})
+        return ("Failed", {"df": "Concat Failed"}, None)
     output_data = output_data.reset_index(drop=True).rename({"Product Code": "productpart"}, axis=1)
     logger.info(f"{str(len(output_data))}: Len Output Data")
     if test:
@@ -210,7 +210,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
         if test:
             product_code = list(set(failed_data["productpart"]))[0]
             failed_data.to_csv(f"./testing/{product_code}_failed.csv")
-        return ("failed",failed_data.isna().sum().to_dict())
+        return ("failed",failed_data.isna().sum().to_dict(), None)
     output_data = output_data.reset_index(drop=True)
     # output_data.to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     output_data = output_data.sort_values("Total Costs", ascending=False)
