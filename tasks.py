@@ -37,7 +37,13 @@ except Exception as e:
 
 def calculate_pricing_job(code):
     logger.info(f"Starting Job for Price Calculation {code}")
-    combinations = create_combinations(code)
+    try:
+        combinations = create_combinations(code)
+    except Exception as e:
+        logger.error(f"{code} failed: {str(e)}")
+        collection = db["pricing_logs"]
+        collection.insert_one({"code":code, "error":str(e),"timestamp": datetime.now(timezone.utc)})
+        raise
     logger.info("Created Combinations")
     buffer = io.StringIO()
     combinations.to_csv(buffer, index=False)
@@ -58,7 +64,7 @@ def calculate_pricing_job(code):
         else:
             logger.info(f"{code} generated no prices")
             collection = db["pricing_logs"]
-            collection.insert_one({"timestamp": datetime.now(timezone.utc), "output":final_prices, "code":code})
+            collection.insert_one({"code":code, "error":str(e),"timestamp": datetime.now(timezone.utc)})
             raise ValueError("No Data Calculated")
 
     except Exception as e:
