@@ -13,7 +13,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["SQM"] = df["Format"].apply(get_litho_sf_SQM).astype('float32')
 
     extra = get_extra()
-    print(extra)
 
     extra_costs = pd.merge(df[["Quantity", "Extra", "idx"]], extra, "left", left_on="Extra", right_on="attribute")
     extra_costs["Extra_costs"] = extra_costs["setup"].fillna(0) + extra_costs["Quantity"] * extra_costs["price"]
