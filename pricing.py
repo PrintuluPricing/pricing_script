@@ -153,7 +153,8 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
             dfs.append(lf_digital_data)
 
     if "Gift" in categories or "Gifts" in categories:
-        gifts_data = gifts.calculation(gifts_data)
+        # gifts_data = gifts.calculation(gifts_data)
+        gifts_data = custom.calculation(gifts_data)
         if len(gifts_data) > 0:
             dfs.append(gifts_data)
 
