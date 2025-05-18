@@ -1,13 +1,19 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_refinement, get_weights, get_finishing
+from helper_pricing_mongo import get_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_refinement, get_weights, get_finishing, get_config
 from shipping import calculate_shipping
 
+
+config = get_config()
 # NOTE: Constants
 SHIPPING_MARKUP = 35
+SHIPPING_MARKUP = config['shipping_markup']
 FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
+FIXED_EXTRA_HANDLING = config["extra_handling"]
 FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
+FIXED_REFINEMENT_HANDLING = config["refinement_handling"]
 FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
+FIXED_FINISHING_HANDLING = config["finishing_handling"]
 
 def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df = df.reset_index(drop=True)

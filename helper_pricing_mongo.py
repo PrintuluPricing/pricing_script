@@ -11,19 +11,41 @@ pymongo_logger = logging.getLogger('pymongo')
 pymongo_logger.setLevel(logging.INFO)
 
 load_dotenv()
-
-KEY = "sheets_key_new.json"
-
-REMOVED_SUPPLIERS = ["DigitalSplash"]
-FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
-FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
-FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
-COLOR_MAP = {"Full Colour": 4, "Black": 1}
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["Printulu"]
 
+cached_data = {}
+
+def get_config():
+    if 'config' in cached_data.keys():
+        return cached_data['config']
+    collection = db["settings"]
+    config = collection.find_one({"type":"config"})
+    cached_data['config'] = config
+    return config
+
+config = get_config()
+
+# NOTE: Constants
+SHIPPING_MARKUP = 35
+SHIPPING_MARKUP = config['shipping_markup']
+FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
+FIXED_EXTRA_HANDLING = config["extra_handling"]
+FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
+FIXED_REFINEMENT_HANDLING = config["refinement_handling"]
+FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
+FIXED_FINISHING_HANDLING = config["finishing_handling"]
+
+# TODO: Move to Mongo Configurations
+REMOVED_SUPPLIERS = ["DigitalSplash"]
+FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
+FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
+FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
+# TODO: Move to Mongo Configurations
+COLOR_MAP = {"Full Colour": 4, "Black": 1}
 # variables
+# TODO: Move to Mongo or remove if not used
 categories_space = {
     "Litho": {"width": 1.5, "height": 0.5},
     "SF Digital": {"width": 0.1, "height": 0.1},
@@ -33,12 +55,10 @@ categories_space = {
 placements = {}
 BLEED = 0.3
 
+# TODO: Move to database configuation
 NO_PRICES_EXTRAS = ["None", "A2 - Calendar Option - Black Changes Only"]
 
-
-cached_data = {}
 cached_data["dimensions"] = {}
-
 
 def get_placements(format: str, size: str, category: str) -> int | float:
     x, y = get_dimensions(format)
@@ -453,4 +473,6 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    settings = get_config()
+    print(settings)
     pass

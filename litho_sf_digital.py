@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_placements, get_paper_costs, get_litho_sf_SQM
+from helper_pricing_mongo import get_placements, get_paper_costs, get_litho_sf_SQM, get_printing_config
 
+
+# TODO: update Printing Configuration from Database
+
+printing_config = get_printing_config()
 
 categories_sizes = {
     "Litho": ";".join(['45.5 x 64', '51 x 71', '64 x 91.5', '71 x 102']),
@@ -10,13 +14,15 @@ categories_sizes = {
     "LF Digital": "100x100",
 }
 
+# TODO: Remove Later
 categories_space = {
     "Litho": {"width": 15, "height": 5},
     "SF Digital": {"width": 1, "height": 1},
     "LF Digital": {"width": 5, "height": 5},
 }
+categories_space = config["categories_space"]
 
-
+# TODO: Remove Later
 machine_sizes = {
     "45.5 x 64": "A2",
     "51 x 71": "A2",
@@ -28,6 +34,7 @@ machine_sizes = {
     "32 x 71": "A3",
     "32 x 91.5": "A3",
         }
+machine_sizes = config["machine_sizes"]
 
 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:

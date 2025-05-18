@@ -1,11 +1,15 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_litho_machines, get_litho_utilization, get_weights, calculate_attributes
+from helper_pricing_mongo import get_litho_machines, get_litho_utilization, get_weights, calculate_attributes, get_config
 from shipping import calculate_shipping
 from binding import calculate_binding
 
 
+config = get_config()
+
+
 SHIPPING_MARKUP = 35
+SHIPPING_MARKUP = config['shipping_markup']
 BINDING_NAMES = ["Wiro Binding - Black","Wiro Binding - Silver","Wiro Binding - White","Spiral Binding - Black","Spiral Binding - Silver","Spiral Binding - White","PUR Binding","A2 Wiro Binding - Black with Hanger","A2 Wiro Binding - Silver with Hanger","A2 Wiro Binding - White with Hanger","A3 Wiro Binding - Black with Hanger","A3 Wiro Binding - Silver with Hanger","A3 Wiro Binding - White with Hanger","A4 Wiro Binding - Black with Hanger","A4 Wiro Binding - Silver with Hanger","A4 Wiro Binding - White with Hanger"]
 
 def printing_calculation(df: pd.DataFrame) -> pd.DataFrame:
