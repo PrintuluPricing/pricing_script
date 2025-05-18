@@ -139,9 +139,8 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
         # SF Digital Calculation
         if len(sf_digital_data) > 0:
             sf_digital_data = sf_digital.calculation(sf_digital_data)
-            # sf_digital_data = calculate_binding(sf_digital_data)
-            # sf_digital_data = calculate_attributes(sf_digital_data, finishing)
 
+            logger.info(f"SF Digital Data!! {str(len(litho_data))}")
             if len(sf_digital_data) > 0:
                 dfs.append(sf_digital_data)
                 del sf_digital_data
