@@ -71,7 +71,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
     # FIX: include sheet size and category
     df = df.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
-    print("SF Digital calculation ended   :", len(df))
     df = df.reset_index(drop=True)
 
     df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing Costs"]
@@ -82,5 +81,6 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("Total Costs", ascending=True)
     df = df.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "supplier", "Quantity"])
     df = df.reset_index(drop=True)
+    print("SF Digital calculation ended   :", len(df))
 
     return df
