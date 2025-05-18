@@ -16,8 +16,8 @@ pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', 5000)
 
 attributes = client["Printulu"]["attributes"]
-attributes = pd.DataFrame(attributes.find({}))
-attributes = attributes.drop(["_id", "categories"], axis=1)
+attributes = pd.DataFrame(attributes.find({},{"_id":0,"type":1,"name":1,"code":1}))
+# attributes = attributes.drop(["_id", "categories"], axis=1)
 
 
 log_level = logging.INFO
