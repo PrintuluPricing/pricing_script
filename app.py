@@ -77,5 +77,6 @@ def download_prices(product_code):
 @app.route('/api/download-all/', methods=['GET'])
 def download_all_prices():
     files = glob.glob(".prices/*_prices-*.csv")
+    all_prices_file = glob.glob(".prices/all-prices.csv")[0]
 
     return jsonify({'files': "Todo"}), 200
