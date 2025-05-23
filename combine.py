@@ -38,7 +38,9 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     db = client["Printulu"]
     products = db["products"]
     product_data = products.find_one({"product_code": product_code})
+    global_rules = db["settings"].find_one({"type":"Incompatibility Rules"})["incompatibility_rules"]
     rules = product_data.get("incompatibility_rules",[])
+    rules.extend(global_rules)
     options = [product_data[key] for key in ['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper']]
     combinations = list(itertools.product(*options))
     product_df = pd.DataFrame(combinations, columns=['category', 'pages', 'finishing', 'binding', 'extra', 'format', 'quantity', 'refinement', 'colour', 'paper'], dtype='category')
