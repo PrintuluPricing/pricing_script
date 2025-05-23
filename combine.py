@@ -17,7 +17,6 @@ pd.set_option('display.width', 5000)
 
 attributes = client["Printulu"]["attributes"]
 attributes = pd.DataFrame(attributes.find({},{"_id":0,"type":1,"name":1,"code":1}))
-# attributes = attributes.drop(["_id", "categories"], axis=1)
 
 
 log_level = logging.INFO
@@ -66,17 +65,17 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     product_df["Product Code"] = product_code
     product_df["Product Name"] = product_data["product_name"]
     product_df["Ganging Possible"] = product_data.get("ganging_possible", False)
-    return product_df
+    return product_df, product_data
 
 
 def create_combinations(product_code):
-    product_df = get_product_data(product_code)
+    product_df, product_data = get_product_data(product_code)
     product_df.columns = [col.title() for col in product_df.columns]
     new_cols = df_cols.copy()
     for col in product_df.columns:
         if col in attributes_cols:
             col_lookup = col.lower()
-            attributes_product_df = attributes[attributes["type"] == col]
+            attributes_product_df = attributes[(attributes["type"] == col) & (attributes["code"].isin(product_data[f"{col.lower()}_code"]))]
             attributes_product_df = attributes_product_df.drop_duplicates().reset_index(drop=True)
             merged = pd.merge(product_df, attributes_product_df, "left",right_on="name", left_on=col).reset_index(drop=True)
             col_codes = merged["code"]
