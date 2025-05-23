@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_placements, get_paper_costs, get_litho_sf_SQM, get_printing_config
+from helper_pricing_mongo import get_placements, get_paper_costs, get_litho_sf_SQM, get_config
 
 
 # TODO: update Printing Configuration from Database

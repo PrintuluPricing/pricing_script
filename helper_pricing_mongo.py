@@ -473,6 +473,4 @@ def get_custom() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    settings = get_config()
-    print(settings)
     pass
