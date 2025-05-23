@@ -140,7 +140,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
         if len(sf_digital_data) > 0:
             sf_digital_data = sf_digital.calculation(sf_digital_data)
 
-            logger.info(f"SF Digital Data!! {str(len(litho_data))}")
+            logger.info(f"SF Digital Data!! {str(len(sf_digital_data))}")
             if len(sf_digital_data) > 0:
                 dfs.append(sf_digital_data)
                 del sf_digital_data
