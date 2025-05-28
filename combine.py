@@ -49,9 +49,9 @@ def get_product_data(product_code: str) -> pd.DataFrame:
         for incompatible in rule["incompatible_with"]:
             incompatible_column = incompatible["type"].lower()
             incompatible_attribute = incompatible["option"]
-            # Apply Rule
             product_df = product_df[(product_df[rule_col] == attribute) & (product_df[incompatible_column] == incompatible_attribute)  == False]
 
+    product_df = product_df.reset_index(drop=True)
     printing_makrup = product_data["markup"]["Printing"]
     binding_markup = product_data["markup"]["Binding"]
     extra_markup = product_data["markup"]["Extra"]
@@ -68,7 +68,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     return product_df, product_data
 
 
-def create_combinations(product_code):
+def create_combinations(product_code, debug=DEBUG):
     product_df, product_data = get_product_data(product_code)
     product_df.columns = [col.title() for col in product_df.columns]
     new_cols = df_cols.copy()
@@ -81,7 +81,7 @@ def create_combinations(product_code):
             col_codes = merged["code"]
             product_df[col_lookup] = col_codes
             new_cols.append(col_lookup) if col_lookup not in new_cols else None
-    if product_df.isna().sum().sum() > 0:
+    if product_df.isna().sum().sum() > 0 and not DEBUG:
         logger.error(product_df.isna().sum()[product_df.isna().sum() > 0])
         raise Exception(f"Some Codes Weren't Found : {product_df.isna().sum()[product_df.isna().sum() > 0]}")
     return product_df[new_cols]
