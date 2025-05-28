@@ -219,13 +219,14 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     # NOTE: Creating a SQL Table for the prices starts here - take this information only: 
     # Product Code, Quantity, Paper, Refinement, Finishing, Colour, Extra, Supplier, Binding, Printing Price, Refinement Price, Binding Price, Delivery Charges, Extra Price, 
     logger.info("Slicing the dataframe")
-    try:
-        sql_data = output_data[["productpart","Category","Pages","Finishing","Binding","Extra","Format","Quantity","Refinement","Colour","Paper","supplier","Shipping Costs","Refinement Costs","Extra Costs","Binding Costs","Finishing Costs","Total Printing Costs","Total Costs"]]
-        sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
-        logger.info("Sliced the dataframe")
-        insert_dataframe_to_postgres(sql_data,"pricing")
-    except Exception as e:
-        logger.info(f"Failed to Add the data to SQL: {e}")
+    if not test:
+        try:
+            sql_data = output_data[["productpart","Category","Pages","Finishing","Binding","Extra","Format","Quantity","Refinement","Colour","Paper","supplier","Shipping Costs","Refinement Costs","Extra Costs","Binding Costs","Finishing Costs","Total Printing Costs","Total Costs"]]
+            sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
+            logger.info("Sliced the dataframe")
+            insert_dataframe_to_postgres(sql_data,"pricing")
+        except Exception as e:
+            logger.info(f"Failed to Add the data to SQL: {e}")
 
     output_data["price"] = 1
     output_data["Unit Price"] = output_data["Total Costs"] / output_data["Quantity"]
