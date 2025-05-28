@@ -3,9 +3,9 @@ from helper_pricing_mongo import get_wiro, get_hanger, get_pur, get_wiro_thickne
 
 
 def get_closest_thickness(thickness: float, binding_thickness: list[float]) -> float:
+    binding_thickness = [float(thick) for thick in binding_thickness]
     if thickness in binding_thickness:
         return thickness
-    binding_thickness = [float(thick) for thick in binding_thickness]
     binding_thickness_bigger = [qty for qty in binding_thickness if float(qty) >thickness]
     if thickness > max(binding_thickness):
         return max(binding_thickness)
@@ -21,9 +21,9 @@ def get_closest_pur_thickness(thickness):
 
 
 def get_closest_length(length, binding_length):
+    binding_length = [float(thick) for thick in binding_length]
     if length in binding_length:
         return length
-    binding_length = [float(thick) for thick in binding_length]
     binding_length_bigger = [qty for qty in binding_length if float(qty) > length]
     if length > max(binding_length):
         return max(binding_length)
