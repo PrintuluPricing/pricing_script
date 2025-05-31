@@ -56,7 +56,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Extra"] = lf_extra["LF Extra"]
     df["LF Extra"] = np.where(df["LF Extra"] > 0, df["LF Extra"] + FIXED_EXTRA_HANDLING, df["LF Extra"])
     df["LF Extra"] = np.where(df["Extra"] == "None", 0, df["LF Extra"])
-    df["LF Extra"] = df["LF Extra"] * df["Quantity"]
 
     lf_refinement = get_refinement()
     lf_refinement = df.merge(lf_refinement, "left", on=["Refinement", "supplier"])
