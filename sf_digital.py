@@ -13,7 +13,6 @@ BINDING_NAMES = ["Wiro Binding - Black","Wiro Binding - Silver","Wiro Binding - 
 def calculation(df: pd.DataFrame) -> pd.DataFrame:
     print("SF Digital calculation started   :", len(df))
     df = df.reset_index(drop=True)
-    print(df.columns)
     if len(df) == 0:
         return df
     bindings = df["Binding"].isin(BINDING_NAMES)
