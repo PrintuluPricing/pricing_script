@@ -19,7 +19,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Overs"] = np.where(df["back_colour"] > 0, 4, 2)
     df["Overs"] = df["Overs"].astype("uint8")
     df["Total Sheets"] = df["printing_sheets"] + df["Overs"]
-    df["Total Sheets"] = df["Total Sheets"].astype("uint16")
+    df["Total Sheets"] = df["Total Sheets"].astype("uint32")
     clicks_costs = get_clicks().drop("colour", axis=1)
     df = pd.merge(df, clicks_costs, "left", on=["machine", "Workstyle", "front_colour", "back_colour"])
     df[["machine", "Workstyle"]] = df[["machine", "Workstyle"]].astype("category")

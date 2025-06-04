@@ -22,7 +22,7 @@ def ganging_calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Ganging Possible"] = (df["Ganging Possible"]) & (df["Placements"] >= 2) & (
        df["Quantity"] <= 10000)
     df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"] / df["pages factor"]
-    df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
+    df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype("uint32")
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["utilization"]
     df["Ganging Setup Cost"] = (df["setup_time"] * df["Plates"] / 60 * df["cost_per_hour"] + df["Total Ganging Sheets"] / df["sheets_per_hour"] * df["cost_per_hour"]) / \
         df["Placements"] / df["utilization"]
@@ -94,7 +94,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["Ganging Possible"] = (df["Ganging Possible"]) & (df["Placements"] >= 2) & (
        df["Quantity"] <= 10000)
     df["Total Ganging Sheets"] = df["Quantity"] + df["Overs"]
-    df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint16')
+    df["Total Ganging Sheets"] = df["Total Ganging Sheets"].astype('uint32')
     df["Ganging Paper Costs"] = df["Paper Costs"] * df["Total Ganging Sheets"] / df["Placements"] / df["utilization"]
     df["Ganging Setup Cost"] = (df["setup_time"] * df["Plates"] / 60 * df["cost_per_hour"] + df["Total Ganging Sheets"] / df["sheets_per_hour"] * df["cost_per_hour"]) / \
     df["Placements"] / df["utilization"]
