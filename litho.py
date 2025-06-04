@@ -126,6 +126,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["fixed_price"] = df["fixed_price"] * df["Original Multiple"]
     df["Printing and Paper incl Markup"] = df["Printing and Paper incl Markup"] * (1 + df["markup_percentage"] / 100) + df["fixed_price"] * df["Multiple"]
 
+    df["Total Sheets"] = np.where((df["Ganging Total"] < df["Printing and Paper incl Markup"]) & df["Ganging Possible"], df["Total Ganging Sheets"] / df["Placements"] , df["Total Sheets"])
     df["Printing and Paper incl Markup"] = np.where(df["Ganging Possible"], np.min(df[["Printing and Paper incl Markup", "Ganging Total"]] , axis=1),df["Printing and Paper incl Markup"])
     df = df[df["Printing and Paper incl Markup"].isna() == False]
 
