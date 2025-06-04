@@ -78,7 +78,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
 
     # FIX: Calculate leaves and sheets based on pages / sheets / 2 if pages
 
-    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]/ df["pages factor"] ).astype('uint16')
+    df["printing_sheets"] = np.ceil(df["Quantity"] * df["PagesNumber"] / df["Placements"]/ df["pages factor"] ).astype(int)
     paper_prices = get_paper_costs()
     df = pd.merge(df, paper_prices, "left", on=["Paper", "sheet_size"])
     del paper_prices
