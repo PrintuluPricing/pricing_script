@@ -101,8 +101,8 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     data["file_type"] = data["file_type"].astype('category')
     data["PagesNumber"] = data["pages"].str.extract(r"(\d+)")
     data["PagesNumber"] = pd.to_numeric(data["PagesNumber"], errors="coerce").astype('uint16', errors="ignore")
-    data[["Height (cm)", "Width (cm)"]] = data["Format"].apply(
-        get_dimensions).to_list()
+    # data[["Height (cm)", "Width (cm)"]] = data["format"].apply(get_dimensions)
+    data[["Height (cm)", "Width (cm)"]] = data.apply(lambda x: get_dimensions(x["format"]), axis=1).to_list()
     data[["Height (cm)", "Width (cm)"]] = data[["Height (cm)", "Width (cm)"]].astype('float16')
     data["Length"] = data["Height (cm)"] * 10
     data["Length"] = data["Length"].astype('float16')
