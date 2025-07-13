@@ -188,6 +188,7 @@ def get_lf_material() -> pd.DataFrame:
     lf_material_collection = db["lf_material_prices"]
     lf_material = pd.DataFrame(list(lf_material_collection.find()))
     lf_material = lf_material.drop(["_id"], axis=1)
+    lf_material = lf_material.drop_duplicates(["supplier", "attribute"]).reset_index(drop=True)
     lf_material = lf_material.rename({"gsm": "GSM"}, axis=1)
     lf_material["price"] = pd.to_numeric(lf_material["price"]).astype("float16")
     lf_material["GSM"] = pd.to_numeric(lf_material["GSM"]).astype("float16")
