@@ -36,7 +36,7 @@ attributes_cols = ['Pages', 'Finishing', 'Binding', 'Extra',
 def get_product_data(product_code: str) -> pd.DataFrame:
     db = client["Printulu"]
     products = db["products"]
-    product_data = products.find_one({"product_code": product_code})
+    product_data = products.find_one({"product_code": product_code, "active":true})
     global_rules = db["settings"].find_one({"type":"Incompatibility Rules"})["incompatibility_rules"]
     rules = product_data.get("incompatibility_rules",[])
     rules.extend(global_rules)
@@ -65,6 +65,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
     product_df["Product Code"] = product_code
     product_df["Product Name"] = product_data["product_name"]
     product_df["Ganging Possible"] = product_data.get("ganging_possible", False)
+    product_df["Custom Price"] = product_data.get("unit_price", False)
     return product_df, product_data
 
 
