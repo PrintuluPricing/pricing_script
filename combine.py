@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 df_cols = ['Product Name', 'Product Code', 'Category', 'Pages', 'Finishing', 'Binding', 'Extra', 'Format', 'Quantity',
-           'Refinement', 'Colour', 'Paper', 'Ganging Possible', 'Printing Markup', 'Finishing Markup', 'Binding Markup', 'Extra Markup', 'Refinement Markup']
+           'Refinement', 'Colour', 'Paper', 'Ganging Possible', 'Printing Markup', 'Finishing Markup', 'Binding Markup', 'Extra Markup', 'Refinement Markup', "Custom Price"]
 attributes_cols = ['Pages', 'Finishing', 'Binding', 'Extra',
                    'Format', 'Refinement', 'Colour', 'Paper']
 
