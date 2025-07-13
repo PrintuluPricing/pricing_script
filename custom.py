@@ -12,6 +12,8 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     df["supplier"] = "Any"
 
     df["Total Costs"] = df["Quantity"] * df["unit_price"] + df["setup"]
+    # TODO: Make the markup dynamic
+    df["Total Costs"] = df["Total Costs"] * 1.4
     df["Total Weight"] = df["Quantity"] * df["unit_kg"]
 
     df = calculate_shipping(df)
