@@ -283,7 +283,7 @@ def get_extra() -> pd.DataFrame:
     collection = db["extra_prices"]
     extra = pd.DataFrame(list(collection.find()))
     extra = extra.drop("_id", axis=1)
-    extra = extra.drop_duplicates().reset_index(drop=True)
+    extra = extra.drop_duplicates("attribute_code").reset_index(drop=True)
     cached_data["extra"] = extra
     return extra
 
