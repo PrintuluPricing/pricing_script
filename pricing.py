@@ -96,6 +96,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     #     f.write(f" {unique_combinations} - unique records  | ")
     logger.info(f"Unique Combinations:  {str(unique_combinations)}")
     categories = list(set(list(data["Category"])))
+    custom_price_flag = list(set(data["Custom Price"]))[0]
     logger.info(f"Categories {str(categories)}")
     data["file_type"] = "#"
     data["file_type"] = data["file_type"].astype('category')
@@ -109,15 +110,15 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     data["Format"] = data["Format"].astype("category")
     logger.info("Adjusted all data")
 
-    lf_digital_data = data[data["Category"] == "LF Digital"]
-    litho_sf_digital_data = data[(data["Category"] == "Litho") | (data["Category"] == "SF Digital")]
+    lf_digital_data = data[(data["Category"] == "LF Digital") & (data["Custom Price"] == False)]
+    litho_sf_digital_data = data[(data["Category"].isin(["Litho", "SF Digital"])) & (data["Custom Price"] == False)]
     gifts_data = data[(data["Category"] == "Gifts") | (data["Category"] == "Gift")]
-    custom_data = data[data["Category"].isin(["Litho", "SF Digital", "Gift"]) == False]
+    custom_data = data[data["Custom Price"] == True]
     logger.info("Split categories")
     del data
 
     dfs = []
-    if "Litho" in categories or "SF Digital" in categories:
+    if ("Litho" in categories or "SF Digital" in categories) and not custom_price_flag:
         logger.info("Adjusting Litho / SF Digital")
         litho_sf_digital_data = litho_sf_digital.calculation(litho_sf_digital_data)
         logger.info("Finished Litho / SF Digital")
@@ -145,7 +146,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
                 dfs.append(sf_digital_data)
                 del sf_digital_data
 
-    if "LF Digital" in categories:
+    if "LF Digital" in categories and not custom_price_flag:
         logger.info("Started LF Digital")
         lf_digital_data = lf_digital.calculation(lf_digital_data)
         if len(lf_digital_data) > 0:
@@ -157,7 +158,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
         if len(gifts_data) > 0:
             dfs.append(gifts_data)
 
-    if "Custom" in categories:
+    if "Custom" in categories or custom_price_flag:
         custom_data = custom.calculation(custom_data)
         logger.info( f"{str(len(custom_data))} Len Custom Data")
         if len(custom_data) > 0:
