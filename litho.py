@@ -173,7 +173,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     if bindings > 0:
         df = calculate_binding(df)
     else:
-        df["Binding_costs"] = 0
+        df["bindingCosts"] = 0
     df = calculate_attributes(df)
     df["Total Costs"] = df["Total Printing Costs"] + df["Refinement Costs"] + df["Extra Costs"] + df["Binding Costs"] + df["Finishing Costs"]
     df["Total Costs"] = np.where(df["Total Costs"] < 75, 75, df["Total Costs"])

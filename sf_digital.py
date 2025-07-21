@@ -67,7 +67,7 @@ def calculation(df: pd.DataFrame) -> pd.DataFrame:
     if np.sum(bindings) > 0:
         df = calculate_binding(df)
     else:
-        df["Binding_costs"] = 0
+        df["bindingCosts"] = 0
     df = calculate_attributes(df)
 
     df = df.sort_values("Printing and Paper incl Markup", ascending=True)
