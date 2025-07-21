@@ -221,13 +221,14 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     # Product Code, Quantity, Paper, Refinement, Finishing, Colour, Extra, Supplier, Binding, Printing Price, Refinement Price, Binding Price, Delivery Charges, Extra Price, 
     logger.info("Slicing the dataframe")
     sql_columns = ["productpart","Category","Pages","Finishing","Binding","Extra","Format","Quantity","Refinement","Colour","Paper","supplier","Shipping Costs","Refinement Costs","Extra Costs","Binding Costs","Finishing Costs","Total Printing Costs","Total Costs", "Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Ganging Possible", "machine"]
-    if not test:
+    # if not test:
+    if True:
+        existing_columns = [col for col in sql_columns if col in output_data.columns]
+        sql_data = output_data[existing_columns]
+        sql_data[["Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]] = sql_data[["Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]].apply(pd.to_numeric, errors="coerce")
+        sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
+        logger.info("Sliced the dataframe")
         try:
-            existing_columns = [col for col in sql_columns if col in output_data.columns]
-            sql_data = output_data[existing_columns]
-            sql_data[["Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]] = pd.to_numeric(sql_data[["Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]], errors="coerce")
-            sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
-            logger.info("Sliced the dataframe")
             insert_dataframe_to_postgres(sql_data,"pricing")
         except Exception as e:
             logger.info(f"Failed to Add the data to SQL: {e}")
