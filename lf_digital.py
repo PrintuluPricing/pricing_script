@@ -43,8 +43,8 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     del lf_material
 
     df["LF Material"] = df["LF Material"] * df["SQM"] * df["LF Double"] * (df["Waste %"] + 1)
-    df["LF Material"] = df["LF Material"] * df["LF Double"]
-    df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["LF Material"]
+    df["Paper Costs"] = df["LF Material"] * df["LF Double"]
+    df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["Paper Costs"]
 
     lf_extra = get_extra()
     lf_extra = df[["Extra", "supplier", "Quantity"]].merge(lf_extra, "left", left_on=["Extra", "supplier"], right_on=["attribute", "supplier"])
@@ -63,6 +63,12 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Refinement"] = np.where(df["Refinement"] == "None", 0, df["LF Refinement"])
     df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
     df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
+
+    # TODO: Updated Name
+    # df["Refinement Costs"] = lf_refinement["price"]
+    # df["Refinement Costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement Costs"])
+    # df["Refinement Costs"] = df["Refinement Costs"] * df["SQM"]
+    # df["Refinement Costs"] = np.where(df["Refinement Costs"] > 0, df["Refinement Costs"] + FIXED_REFINEMENT_HANDLING, df["Refinement Costs"])
 
     # TODO: Calculate Finishing from MONGODB after pushing the data
 
