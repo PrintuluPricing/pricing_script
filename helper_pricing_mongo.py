@@ -322,27 +322,27 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     print("Finishing")
 
     finishing_costs = pd.merge(df[["supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["supplier", "Finishing"], right_on=["supplier", "attribute"])
-    finishing_costs["Finishing_costs"] = finishing_costs["setup"].fillna(0) +np.where(finishing_costs["price"] > 0,FIXED_FINISHING_HANDLING, 0)  + np.where(finishing_costs["calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["price"], finishing_costs["Total Sheets"] * finishing_costs["price"])
-    finishing_costs["Finishing_costs"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["Finishing_costs"])
+    finishing_costs["finishingCosts"] = finishing_costs["setup"].fillna(0) +np.where(finishing_costs["price"] > 0,FIXED_FINISHING_HANDLING, 0)  + np.where(finishing_costs["calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["price"], finishing_costs["Total Sheets"] * finishing_costs["price"])
+    finishing_costs["finishingCosts"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["finishingCosts"])
 
     print("Extra")
     # Extra Costs
     extra_costs = pd.merge(df[["supplier", "Quantity", "Extra", "Total Sheets"]],extra , "left", left_on=["supplier", "Extra"], right_on=["supplier", "attribute"])
     # NOTE: Check later which cases that apply to: Drilling, holes, should be applied as minimum handling fees
 
-    extra_costs["Extra_costs"] = extra_costs["setup"].fillna(0) + np.where(extra_costs["price"] > 0,FIXED_EXTRA_HANDLING, 0) + np.where(extra_costs["calculation"] == "PI", extra_costs["Quantity"] * extra_costs["price"], extra_costs["Total Sheets"] * extra_costs["price"])
-    extra_costs["Extra_costs"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["Extra_costs"])
+    extra_costs["extraCosts"] = extra_costs["setup"].fillna(0) + np.where(extra_costs["price"] > 0,FIXED_EXTRA_HANDLING, 0) + np.where(extra_costs["calculation"] == "PI", extra_costs["Quantity"] * extra_costs["price"], extra_costs["Total Sheets"] * extra_costs["price"])
+    extra_costs["extraCosts"] = np.where(extra_costs["Extra"] == "None", 0, extra_costs["extraCosts"])
 
     print("Binding")
     # Binding Costs
 
     binding_costs = pd.merge(df[["supplier", "Quantity", "Binding", "Total Sheets"]],binding , "left", left_on=["supplier", "Binding"], right_on=["supplier", "attribute"])
-    binding_costs["Binding_costs"] = binding_costs["setup"].fillna(0) + np.where(binding_costs["calculation"] == "PI", binding_costs["Quantity"] * binding_costs["price"], binding_costs["Total Sheets"] *binding_costs["price"])
-    binding_costs["Binding_costs"] = np.where(binding_costs["Binding"] == "None", 0, binding_costs["Binding_costs"])
+    binding_costs["bindingCosts"] = binding_costs["setup"].fillna(0) + np.where(binding_costs["calculation"] == "PI", binding_costs["Quantity"] * binding_costs["price"], binding_costs["Total Sheets"] *binding_costs["price"])
+    binding_costs["bindingCosts"] = np.where(binding_costs["Binding"] == "None", 0, binding_costs["bindingCosts"])
 
-    df["Finishing_costs"] = finishing_costs["Finishing_costs"]
-    df["Binding_costs"] = np.where(df["Binding_costs"]> 0, df["Binding_costs"], binding_costs["Binding_costs"])
-    df["Extra_costs"] = extra_costs["Extra_costs"]
+    df["finishingCosts"] = finishing_costs["finishingCosts"]
+    df["bindingCosts"] = np.where(df["bindingCosts"]> 0, df["bindingCosts"], binding_costs["bindingCosts"])
+    df["extraCosts"] = extra_costs["extraCosts"]
 
     del (finishing_costs)
     del (binding_costs)
@@ -353,14 +353,14 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.reset_index(drop=True)
     df = pd.merge(df, refinement, "left", on=["supplier", "Refinement"])
-    df["Refinement_costs"] = df["price"] * df["SQM"] * df["Total Sheets"]
-    df["Refinement_costs"] = np.where(df["Refinement_costs"]> 0, df["Refinement_costs"] + FIXED_REFINEMENT_HANDLING, 0)
-    df["Refinement_costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement_costs"])
+    df["refinementCosts"] = df["price"] * df["SQM"] * df["Total Sheets"]
+    df["refinementCosts"] = np.where(df["refinementCosts"]> 0, df["refinementCosts"] + FIXED_REFINEMENT_HANDLING, 0)
+    df["refinementCosts"] = np.where(df["Refinement"] == "None", 0, df["refinementCosts"])
 
-    df["Refinement Costs"] = df["Refinement_costs"] * ( 1 + df["Refinement Markup"] /100)
-    df["Extra Costs"] = df["Extra_costs"] * (1 + df["Extra Markup"] /100)
-    df["Binding Costs"] = df["Binding_costs"] *(1 + df["Binding Markup"] /100)
-    df["Finishing Costs"] = df["Finishing_costs"] *(1 + df["Finishing Markup"] /100)
+    df["Refinement Costs"] = df["refinementCosts"] * ( 1 + df["Refinement Markup"] /100)
+    df["Extra Costs"] = df["extraCosts"] * (1 + df["Extra Markup"] /100)
+    df["Binding Costs"] = df["bindingCosts"] *(1 + df["Binding Markup"] /100)
+    df["Finishing Costs"] = df["finishingCosts"] *(1 + df["Finishing Markup"] /100)
     df["Total Printing Costs"] = df["Printing and Paper incl Markup"] * (1 + df["Printing Markup"] /100)
 
     print("Finished Attributes: ", len(df))
