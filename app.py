@@ -4,6 +4,7 @@ import os
 import logging
 from dotenv import load_dotenv
 from rq import Queue
+from rq.job import StartedJobRegistry, FinishedJobRegistry, FailedJobRegistry, DeferredJobRegistry, ScheduledJobRegistry, CanceledJobRegistry
 import redis
 from tasks import calculate_pricing_job
 import glob
@@ -52,6 +53,14 @@ def get_task_status(task_id):
     job = queue.fetch_job(task_id)
     if job is None:
         return jsonify({'error': 'Job not found'}), 404
+    status = job.get_status()
+    result = job.result  # This will be None if the job is not complete
+
+    return jsonify({'status': status, 'result': result}), 200
+
+
+@app.route('/api/task/<task_id>', methods=['GET'])
+def get_all_tasks():
     status = job.get_status()
     result = job.result  # This will be None if the job is not complete
 
