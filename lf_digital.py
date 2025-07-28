@@ -63,7 +63,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     if is_substrate:
         df = df.merge(substrate_data, "left", on=["idx", "supplier"])
         df["Printing and Paper Costs"] = np.where(df["substrate"], df["Substrate Costs"] * df["SQM"] , df["Printing and Paper Costs"])
-        df.to_csv("test_lf_subtrate.csv", index=False)
 
     lf_extra = get_extra()
     lf_extra = df[["Extra", "supplier", "Quantity"]].merge(lf_extra, "left", left_on=["Extra", "supplier"], right_on=["attribute", "supplier"])
