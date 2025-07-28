@@ -58,7 +58,7 @@ BLEED = 0.3
 # TODO: Move to database configuation
 NO_PRICES_EXTRAS = ["None", "A2 - Calendar Option - Black Changes Only"]
 
-cached_data["dimensions"] = {}
+cached_data["_dimensions"] = {}
 
 def get_placements(format: str, size: str, category: str) -> int | float:
     x, y = get_dimensions(format)
@@ -77,8 +77,8 @@ def get_placements(format: str, size: str, category: str) -> int | float:
 
 
 def get_dimensions(size: str) -> tuple[float, float]:
-    if size in cached_data["dimensions"].keys():
-        return cached_data["dimensions"][size]
+    if size in cached_data["_dimensions"].keys():
+        return cached_data["_dimensions"][size]
     size = str(size).replace("format_", "")
     size = str(size).replace("_", ".")
     try:
@@ -98,7 +98,7 @@ def get_dimensions(size: str) -> tuple[float, float]:
     if "p" in size:
         height = max(height1, width1)
         width = min(height1, width1) * 2
-    cached_data["dimensions"][size] = (height, width)
+    cached_data["_dimensions"][size] = (height, width)
     return height, width
 
 
@@ -201,20 +201,6 @@ def get_lf_material() -> pd.DataFrame:
     return lf_material
 
 
-def get_lf_extra() -> pd.DataFrame:
-    if "lf_extra" in cached_data.keys():
-        return cached_data["lf_extra"]
-    collection = db["lf_extra_prices"]
-    lf_extra = pd.DataFrame(list(collection.find()))
-    lf_extra = lf_extra.drop(["_id"], axis=1)
-    lf_extra["price"] = pd.to_numeric(lf_extra["price"]).astype("float16")
-    lf_extra = lf_extra.rename({"price": "LF Extra", "attribute": "Extra"}, axis=1)
-    lf_extra = lf_extra[lf_extra["supplier"].isin(REMOVED_SUPPLIERS) == False]
-    lf_extra[["supplier", "Extra"]] = lf_extra[["supplier", "Extra"]].astype("category")
-    cached_data["lf_extra"] = lf_extra
-    return lf_extra
-
-
 def get_lf_refinement() -> pd.DataFrame:
     if "lf_refinement" in cached_data.keys():
         return cached_data["lf_refinement"]
@@ -285,7 +271,7 @@ def get_extra() -> pd.DataFrame:
     collection = db["extra_prices"]
     extra = pd.DataFrame(list(collection.find()))
     extra = extra.drop("_id", axis=1)
-    extra = extra.drop_duplicates("attribute_code").reset_index(drop=True)
+    extra = extra.drop_duplicates(["supplier" ,"attribute_code"]).reset_index(drop=True)
     cached_data["extra"] = extra
     return extra
 
