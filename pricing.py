@@ -224,9 +224,12 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     if not test:
         existing_columns = [col for col in sql_columns if col in output_data.columns]
         sql_data = output_data[existing_columns]
-        sql_data[["Placements", "printing_sheets", "Total Sheets"]] = sql_data[["Placements", "printing_sheets", "Total Sheets"]].astype(int)
-        sql_data[["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]] = sql_data[["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]].apply(pd.to_numeric, errors="coerce")
-        sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
+        try:
+            sql_data[["Placements", "printing_sheets", "Total Sheets"]] = sql_data[["Placements", "printing_sheets", "Total Sheets"]].astype(int)
+            sql_data[["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]] = sql_data[["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs"]].apply(pd.to_numeric, errors="coerce")
+            sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
+        except:
+            logger.error(f"SQL Data error: {str(e)} ")
         logger.info("Sliced the dataframe")
         try:
             insert_dataframe_to_postgres(sql_data,"pricing")
