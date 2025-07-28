@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from helper_pricing_mongo import get_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_refinement, get_weights, get_finishing, get_config
+from helper_pricing_mongo import get_extra, get_lf_mahcines, get_lf_material, get_lf_SQM, get_refinement, get_weights, get_finishing, get_config, get_placements
 from shipping import calculate_shipping
 
 
@@ -23,10 +23,23 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df["SQM"] = df["format"].apply(get_lf_SQM).astype('float32')
     df["SQM"] = df["Quantity"] / df["SQM"]  # FIX: Check the integer ouptut
+    df["Placements"] = df.apply(lambda x:  get_placements(x["format"], "100 x 100", "LF Digital"), axis=1)
 
     lf_material = get_lf_material()
     lf_double = list(lf_material[lf_material["double"] == True]["Paper"])
     lf_material = df.merge(lf_material, "left", on=["Paper", "supplier"])
+
+    is_substrate = lf_material["substrate"].sum() > 0
+
+    if is_substrate:
+        substrate_data = lf_material[lf_material["substrate"]== True]
+        substrate_data["Sides"] = np.where(substrate_data["colour"].str.contains("44"), "Double", "Single")
+        substrate_data["Placements"] = substrate_data.apply(lambda x: get_placements(x["format"], x["dimensions"], "Litho"), axis=1 )
+        substrate_data = substrate_data[substrate_data["Placements"] >= 1]
+        substrate_data["Substrate Costs"] = np.where(substrate_data["Sides"] == "Double", substrate_data["double_side_printing"],substrate_data["single_side_printing"] )
+        substrate_data = substrate_data.sort_values("Substrate Costs")
+        substrate_data = substrate_data.drop_duplicates(["Paper", "idx"]).reset_index(drop=True)
+        substrate_data = substrate_data[["idx","supplier", "substrate", "Substrate Costs"]]
 
     df["Waste %"] = lf_material["Waste %"].fillna(0)
 
@@ -36,6 +49,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df["LF Cutting"] = lf_material["LF Cutting"]  # .fillna(0) * df["SQM"]
     df["LF Cutting"] = df["LF Cutting"].fillna(0) * df["SQM"]
+    df["LF Cutting"] = df["LF Cutting"].astype(float)
 
     df["LF Material"] = lf_material["LF Material"]
     df["GSM"] = lf_material["GSM"]
@@ -44,7 +58,12 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
 
     df["LF Material"] = df["LF Material"] * df["SQM"] * df["LF Double"] * (df["Waste %"] + 1)
     df["Paper Costs"] = df["LF Material"] * df["LF Double"]
+    df["Paper Costs"] = df["Paper Costs"].astype(float)
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["Paper Costs"]
+    if is_substrate:
+        df = df.merge(substrate_data, "left", on=["idx", "supplier"])
+        df["Printing and Paper Costs"] = np.where(df["substrate"], df["Substrate Costs"] * df["SQM"] , df["Printing and Paper Costs"])
+        df.to_csv("test_lf_subtrate.csv", index=False)
 
     lf_extra = get_extra()
     lf_extra = df[["Extra", "supplier", "Quantity"]].merge(lf_extra, "left", left_on=["Extra", "supplier"], right_on=["attribute", "supplier"])
@@ -64,13 +83,6 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["LF Refinement"] = df["LF Refinement"] * df["SQM"]
     df["LF Refinement"] = np.where(df["LF Refinement"] > 0, df["LF Refinement"] + FIXED_REFINEMENT_HANDLING, df["LF Refinement"])
 
-    # TODO: Updated Name
-    # df["Refinement Costs"] = lf_refinement["price"]
-    # df["Refinement Costs"] = np.where(df["Refinement"] == "None", 0, df["Refinement Costs"])
-    # df["Refinement Costs"] = df["Refinement Costs"] * df["SQM"]
-    # df["Refinement Costs"] = np.where(df["Refinement Costs"] > 0, df["Refinement Costs"] + FIXED_REFINEMENT_HANDLING, df["Refinement Costs"])
-
-    # TODO: Calculate Finishing from MONGODB after pushing the data
 
     finishing = get_finishing()
     # FIXME: Remove the rename later
