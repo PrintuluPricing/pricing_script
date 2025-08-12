@@ -174,7 +174,6 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     output_data = output_data.reset_index(drop=True).rename({"Product Code": "productpart"}, axis=1)
     logger.info(f"{str(len(output_data))}: Len Output Data")
     if test:
-        output_data.to_csv(f"{product_code} output_test.csv", index=False)
     logger.info("Collected All")
     del dfs
     # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
@@ -221,8 +220,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
     # Product Code, Quantity, Paper, Refinement, Finishing, Colour, Extra, Supplier, Binding, Printing Price, Refinement Price, Binding Price, Delivery Charges, Extra Price, 
     logger.info("Slicing the dataframe")
     sql_columns = ["productpart","Category","Pages","Finishing","Binding","Extra","Format","Quantity","Refinement","Colour","Paper","supplier","Shipping Costs","Refinement Costs","Extra Costs","Binding Costs","Finishing Costs","Total Printing Costs","Total Costs", "Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Ganging Possible", "machine"]
-    # if not test:
-    if True:
+    if not test:
         existing_columns = [col for col in sql_columns if col in output_data.columns]
         sql_data = output_data[existing_columns]
         try:
@@ -230,10 +228,12 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
             int_columns = [col for col in int_columns if col in existing_columns]
             numeric_columns = ["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs", "Placements"]
             numeric_columns = [col for col in numeric_columns if col in existing_columns]
+            sql_data[int_columns] = sql_data[int_columns].fillna(0)
             sql_data[int_columns] = sql_data[int_columns].astype(int)
             sql_data[numeric_columns] = sql_data[numeric_columns].apply(pd.to_numeric, errors="coerce")
             sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
         except Exception as e:
+            sql_data.to_csv("SQL Data.csv", index=False)
             logger.error(f"SQL Data error: {str(e)} ")
         logger.info("Sliced the dataframe")
         try:
