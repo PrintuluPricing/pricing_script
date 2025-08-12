@@ -228,7 +228,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
         try:
             int_columns = ["printing_sheets", "Total Sheets"]
             int_columns = [col for col in int_columns if col in existing_columns]
-            numeric_columns = ["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs". "Placements"]
+            numeric_columns = ["GSM", "Paper Costs", "Printing and Paper Costs", "Total Printing Costs", "Placements"]
             numeric_columns = [col for col in numeric_columns if col in existing_columns]
             sql_data[int_columns] = sql_data[int_columns].astype(int)
             sql_data[numeric_columns] = sql_data[numeric_columns].apply(pd.to_numeric, errors="coerce")
