@@ -232,7 +232,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
             sql_data[int_columns] = sql_data[int_columns].astype(int)
             sql_data[numeric_columns] = sql_data[numeric_columns].apply(pd.to_numeric, errors="coerce")
             sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
-        except:
+        except Exception as e:
             logger.error(f"SQL Data error: {str(e)} ")
         logger.info("Sliced the dataframe")
         try:
