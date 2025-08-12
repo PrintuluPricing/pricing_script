@@ -173,7 +173,6 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
         return ("Failed", {"df": "Concat Failed"}, None)
     output_data = output_data.reset_index(drop=True).rename({"Product Code": "productpart"}, axis=1)
     logger.info(f"{str(len(output_data))}: Len Output Data")
-    if test:
     logger.info("Collected All")
     del dfs
     # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
