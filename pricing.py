@@ -48,7 +48,7 @@ def return_first(args):
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 
-def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[Any, Any]:
+def pricing_calculation(file:str| Any, test=False, product_code=None, version) -> dict[Any, Any]:
 
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
@@ -231,6 +231,7 @@ def pricing_calculation(file:str| Any, test=False, product_code=None) -> dict[An
             sql_data[int_columns] = sql_data[int_columns].astype(int)
             sql_data[numeric_columns] = sql_data[numeric_columns].apply(pd.to_numeric, errors="coerce")
             sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
+            sql_data["version"] = version
         except Exception as e:
             sql_data.to_csv("SQL Data.csv", index=False)
             logger.error(f"SQL Data error: {str(e)} ")

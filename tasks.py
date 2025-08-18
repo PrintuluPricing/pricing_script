@@ -49,8 +49,9 @@ def calculate_pricing_job(code):
     combinations.to_csv(buffer, index=False)
     buffer.seek(0)
     logger.info("Created Combinations and running Prices")
+    version = get_last_version(code) + 1
     try:
-        (success_code, final_prices, final_prices_df) = pricing_calculation(buffer)
+        (success_code, final_prices, final_prices_df) = pricing_calculation(buffer, version=version)
         if success_code == "success":
             logger.info("Pricing Finished, Saving to Database")
             final_prices = [{str(k): price[k] for k in price.keys()} for price in final_prices]
