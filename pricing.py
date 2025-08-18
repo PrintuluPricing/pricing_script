@@ -48,7 +48,7 @@ def return_first(args):
 timestamp = datetime.now().strftime("%d-%B-%y %H:%M")
 
 
-def pricing_calculation(file:str| Any, test=False, product_code=None, version) -> dict[Any, Any]:
+def pricing_calculation(file:str| Any, test=False, product_code=None, version=0) -> dict[Any, Any]:
 
     data_columns = ['Category', 'Product Code', 'paper', 'format', 'pages', 'colors', 'book_binding', 'refinement', 'finishing', 'options', 'Printing Markup', 'Refinement Markup', 'Finishing Markup', 'Extra Markup', 'Binding Markup', 'SuperCategory', 'PagesIsSheets', 'Quantity', 'Binding', 'Finishing', 'Paper', 'Colour', 'Format', 'Refinement', 'Sheets', 'Extra', 'GangingQuantity']
 
