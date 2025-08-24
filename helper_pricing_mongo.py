@@ -308,9 +308,14 @@ def calculate_attributes(df: pd.DataFrame) -> pd.DataFrame:
     # FINISHING COSTS
     print("Finishing")
 
-    finishing_costs = pd.merge(df[["supplier", "Quantity", "Finishing", "Total Sheets"]], finishing, "left", left_on=["supplier", "Finishing"], right_on=["supplier", "attribute"])
+    finishing_costs = pd.merge(df[["supplier", "Quantity", "Finishing", "Total Sheets", "pages", "Product Code"]], finishing, "left", left_on=["supplier", "Finishing"], right_on=["supplier", "attribute"])
     finishing_costs["finishingCosts"] = finishing_costs["setup"].fillna(0) +np.where(finishing_costs["price"] > 0,FIXED_FINISHING_HANDLING, 0)  + np.where(finishing_costs["calculation"] == "PI", finishing_costs["Quantity"] * finishing_costs["price"], finishing_costs["Total Sheets"] * finishing_costs["price"])
     finishing_costs["finishingCosts"] = np.where(finishing_costs["Finishing"] == "None",0, finishing_costs["finishingCosts"])
+
+    # FIX: NEEDS TO be included in the logic later
+    # NOTE: Exception Done for DESKPAD CALENDARS for LAW Print
+    finishing_costs["finishingCosts"] = np.where( (finishing_costs["pages"].isin(["sheets_7", "sheet_6"])) & (finishing_costs["Product Code"] == "tp_desk") ,1.46 , finishing_costs["finishingCosts"])
+    finishing_costs["finishingCosts"] = np.where( (finishing_costs["pages"].isin(["sheets_12", "sheet_13"])) & (finishing_costs["Product Code"] == "tp_desk") ,2.8 , finishing_costs["finishingCosts"])
 
     print("Extra")
     # Extra Costs
