@@ -80,9 +80,11 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
     logger.info(str(len(data)))
     logger.info("Removing Duplicates")
     data = data.drop_duplicates(["Category","Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"])
+
     unique = data.drop_duplicates(["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]).reset_index(drop=True)
     unique = unique[["Product Code", "paper", "format", "pages", "colour", "binding", "refinement", "finishing", "extra", "Quantity"]]
     unique = unique.reset_index(drop=True)
+
     unique = unique.reset_index()
     unique = unique.rename({"index":"idx"}, axis=1)
     unique_combinations = len(unique)
@@ -177,8 +179,12 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
     del dfs
     # output_data.to_csv(f"Output Data Before {products[0] if len(products) == 1 else None} {timestamp}.csv", index=False)
     # output_data[output_data["Total Costs"].isna()].to_csv(f"Output Data {products[0] if len(products) == 1 else None} {timestamp} no_prices.csv", index=False)
+    if test:
+        logger.info(f"{set(output_data['Category'])}")
+        output_data.to_csv(f"{product_code} output_before.csv", index=False)
     failed_data = output_data[output_data["Total Costs"].isna() == True]
     output_data = output_data[output_data["Total Costs"].isna() == False]
+
     # NOTE: First remove_duplicates from the same combination and keep one for each supplier with the lowest cost
     # Need to check for the same category
 
@@ -194,20 +200,21 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
     output_data = output_data.merge(cheapest,"inner",on=["idx","Category"])
     del cheapest
 
-
+    product_code = list(set(output_data["productpart"]))[0]
     output_data = output_data.rename({"Product Code":"productpart", "colour":"colors", "binding":"book_binding", "extra": "options"}, axis=1)
 
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "supplier", "Quantity"])
-    logger.info(f"{str(len(output_data))}")
+    logger.info(f"{str(len(output_data))}: Len data")
+    if test:
+        output_data.to_csv(f"{product_code} output.csv", index=False)
     output_data = output_data.sort_values("Total Costs", ascending=False)
     output_data = output_data.drop_duplicates(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity"])
-    logger.info(f"len(output_data)")
+    logger.info(f"{str(len(output_data))}: Len data")
 
 
     if len(output_data) == 0:
         logger.error("No Data")
         if test:
-            product_code = list(set(failed_data["productpart"]))[0]
             failed_data.to_csv(f"./testing/{product_code}_failed.csv")
         return ("failed",failed_data.isna().sum().to_dict(), None)
     output_data = output_data.reset_index(drop=True)
@@ -233,7 +240,6 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
             sql_data = sql_data.rename({"productpart":"product_code"},axis=1)
             sql_data["version"] = version
         except Exception as e:
-            sql_data.to_csv("SQL Data.csv", index=False)
             logger.error(f"SQL Data error: {str(e)} ")
         logger.info("Sliced the dataframe")
         try:
@@ -246,6 +252,9 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
     output_data["Unit Price"] = np.round(output_data["Unit Price"], 2).astype("float32")
     final_data = pd.pivot_table(output_data, values="Unit Price", columns="Quantity", aggfunc="mean" , index=[
                              "price", "productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "file_type"])
+    logger.info(f"{str(len(final_data))}: Len final data")
+    if test:
+        final_data.to_csv(f"{product_code} final_data.csv")
     data_to_send = final_data.reset_index()
     return ("success", data_to_send.to_dict(orient='records'), final_data)
 
