@@ -48,7 +48,7 @@ def get_product_data(product_code: str) -> pd.DataFrame:
         attribute = rule['option']
         for incompatible in rule["incompatible_with"]:
             incompatible_column = incompatible["type"].lower()
-            incompatible_attribute = incompatible["option"]
+            incompatible_attribute = int(incompatible["option"]) if incompatible_column == "quantity" else incompatible["option"]
             product_df = product_df[(product_df[rule_col] == attribute) & (product_df[incompatible_column] == incompatible_attribute)  == False]
 
     product_df = product_df.reset_index(drop=True)
