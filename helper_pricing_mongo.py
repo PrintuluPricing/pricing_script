@@ -37,8 +37,13 @@ FIXED_REFINEMENT_HANDLING = config["refinement_handling"]
 FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
 FIXED_FINISHING_HANDLING = config["finishing_handling"]
 
+def removed_suppliers():
+    suppliers = list(db["suppliers"].find({"active":False}, {"name":1,"_id":0}))
+    suppliers = [supplier["name"] for supplier in suppliers]
+    return suppliers
+
 # TODO: Move to Mongo Configurations
-REMOVED_SUPPLIERS = ["DigitalSplash"]
+REMOVED_SUPPLIERS = removed_suppliers()
 FIXED_EXTRA_HANDLING = 75  # R75 to be added to all extras
 FIXED_REFINEMENT_HANDLING = 50  # R50 to be added to all extras
 FIXED_FINISHING_HANDLING = 25  # R25 to be added to all extras
