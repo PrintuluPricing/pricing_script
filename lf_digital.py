@@ -62,6 +62,7 @@ def calculation(df: pd.DataFrame)-> pd.DataFrame:
     df["Printing and Paper Costs"] = df["Printing Rate"] + df["LF Cutting"] + df["Paper Costs"]
     if is_substrate:
         df = df.merge(substrate_data, "left", on=["idx", "supplier"])
+        df["substrate"] = df["substrate"].fillna(False)
         df["Printing and Paper Costs"] = np.where(df["substrate"], df["Substrate Costs"] * df["SQM"] , df["Printing and Paper Costs"])
 
     lf_extra = get_extra()
