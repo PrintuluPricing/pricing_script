@@ -4,6 +4,7 @@ import pandas as pd
 import io
 import os
 import logging
+import csv
 
 load_dotenv()
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
@@ -17,15 +18,19 @@ logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
 SQL_URL = os.environ.get('SQL_URL')
+SQL_URL_VENDURE = os.environ.get('SQL_URL_VENDURE')
 
 
 def connect_database():
     return psycopg2.connect(SQL_URL)
 
+def connect_database_vendure():
+    return psycopg2.connect(SQL_URL_VENDURE)
+
 
 connection = connect_database()
-cursor = connection.cursor()
 
+vendure_connection = connect_database_vendure()
 
 def get_sql_table(table_name:str):
     with connection.cursor() as cur:
@@ -36,6 +41,8 @@ def get_sql_table(table_name:str):
         cur.execute(read_all_query)
         data = cur.fetchall()
     return data
+
+
 
 
 def get_table_column(table_name:str, column:str):
@@ -60,6 +67,38 @@ def get_sql_columns(table_name:str):
         data = cur.fetchall()
         data = [item[0] for item in data]
     return data
+
+
+
+def update_vendure_prices(data):
+    buff = io.StringIO()
+    data.to_csv(buff, index=False, sep=";", header=False, quoting=csv.QUOTE_NONE)
+    cols = tuple(data.columns)
+    buff.seek(0)
+
+    with vendure_connection.cursor() as cur:
+        create_temp_table = """
+        CREATE TEMP TABLE price_update_temp (
+        sku VARCHAR(250),
+        new_price TEXT
+        )
+
+        """
+        # NOTE : Loading data into temp table
+        cur.execute(create_temp_table)
+        print("Created Temp Table")
+        cur.copy_from(buff, "price_update_temp", sep=";", columns=cols)
+        print("Added Data to Temp Table")
+        update_query = """
+        UPDATE product_variant pv
+        SET "customFieldsPricetable" = price_update_temp.new_price::JSONB::TEXT, 
+            "updatedAt" = NOW()
+        FROM price_update_temp 
+        WHERE pv.sku = price_update_temp.sku
+        """
+        cur.execute(update_query)
+        print("Updated The pricing Data")
+    vendure_connection.commit()
 
 
 def insert_dataframe_to_postgres(df, table_name, identifier=None):
