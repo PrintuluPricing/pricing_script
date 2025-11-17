@@ -243,7 +243,6 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
     sql_data_2["sku"] = sql_data_2.iloc[:,:9].astype(str).agg(func=lambda x: "|".join(x), axis=1)
     sql_data_2 = sql_data_2[["sku", "new_price"]]
 
-    sql_data_2.to_csv("sql_data2.csv", index=False)
 
     update_vendure_prices(sql_data_2)
 
