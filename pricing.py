@@ -15,7 +15,7 @@ import numpy as np
 from dotenv import load_dotenv
 import os
 from typing import Any
-from sql import insert_dataframe_to_postgres
+from sql import insert_dataframe_to_postgres, update_vendure_prices
 
 warnings.simplefilter(action="ignore")
 
@@ -226,6 +226,44 @@ def pricing_calculation(file:str| Any, test=False, product_code=None, version=0)
     # Product Code, Quantity, Paper, Refinement, Finishing, Colour, Extra, Supplier, Binding, Printing Price, Refinement Price, Binding Price, Delivery Charges, Extra Price, 
     logger.info("Slicing the dataframe")
     sql_columns = ["productpart","Category","Pages","Finishing","Binding","Extra","Format","Quantity","Refinement","Colour","Paper","supplier","Shipping Costs","Refinement Costs","Extra Costs","Binding Costs","Finishing Costs","Total Printing Costs","Total Costs", "Placements", "printing_sheets", "Total Sheets", "GSM", "Paper Costs", "Printing and Paper Costs", "Ganging Possible", "machine"]
+    sql_columns_2 = ["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options", "Quantity", "Total Costs"]
+
+    sql_columns_2 = [col for col in sql_columns_2 if col in output_data.columns]
+    sql_data_2 = output_data[sql_columns_2]
+    sql_data_2["unit_price"] = sql_data_2["Total Costs"] / sql_data_2["Quantity"]
+    sql_data_2["unit_price"] = np.round(sql_data_2["unit_price"].astype(float), 4)
+    sql_data_2 = sql_data_2.sort_values("Quantity")
+    # TODO: Check if Renaming is needed to match SQL Table
+    # sql_data_2["customFieldsPriceTable"] = "\"" + sql_data_2["Quantity"].astype(str).str.strip() + "\":" +sql_data_2["unit_price"].astype(str).str.strip()
+    sql_data_2["new_price"] = "\"" + sql_data_2["Quantity"].astype(str).str.strip() + "\":" +sql_data_2["unit_price"].astype(str).str.strip()
+    sql_data_2 = sql_data_2.drop(["unit_price", "Total Costs", "Quantity"], axis=1)
+
+    sql_data_2 = sql_data_2.groupby(["productpart", "paper", "format", "pages", "colors", "book_binding", "refinement", "finishing", "options"]).agg(func = lambda x:"{" + ", ".join(x) + "}" ).reset_index()
+
+    sql_data_2["sku"] = sql_data_2.iloc[:,:9].astype(str).agg(func=lambda x: "|".join(x), axis=1)
+    sql_data_2 = sql_data_2[["sku", "new_price"]]
+
+    sql_data_2.to_csv("sql_data2.csv", index=False)
+
+    update_vendure_prices(sql_data_2)
+
+
+    # CHECK: Are all these columns actually needed? only in upsert 
+    """
+    sql_data_2 = sql_data_2.rename({
+        "paper":"customFieldsMaterial",
+        "format":"customFieldsVariantSize",
+        "pages":"customFieldsPages",
+        "":"",
+        "":"",
+        "":"",
+        "":"",
+
+        }, axis=1)
+
+    """
+
+
     if not test:
         existing_columns = [col for col in sql_columns if col in output_data.columns]
         sql_data = output_data[existing_columns]
