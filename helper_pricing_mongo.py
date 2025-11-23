@@ -206,20 +206,6 @@ def get_lf_material() -> pd.DataFrame:
     return lf_material
 
 
-def get_lf_refinement() -> pd.DataFrame:
-    if "lf_refinement" in cached_data.keys():
-        return cached_data["lf_refinement"]
-    collection = db["lf_refinement_prices"]
-    lf_refinement = pd.DataFrame(list(collection.find()))
-    lf_refinement = lf_refinement.drop(["_id"], axis=1)
-    lf_refinement["price"] = pd.to_numeric(lf_refinement["price"]).astype("float16")
-    lf_refinement = lf_refinement.rename({"price": "LF Refinement","attribute":"Refinement"}, axis=1)
-    lf_refinement = lf_refinement[lf_refinement["supplier"].isin(REMOVED_SUPPLIERS) == False]
-    lf_refinement[["supplier", "Refinement"]] = lf_refinement[["supplier", "Refinement"]].astype("category")
-    cached_data["lf_refinement"] = lf_refinement
-    return lf_refinement
-
-
 def get_weights() -> pd.DataFrame:
     if "weights" in cached_data.keys():
         return cached_data["weights"]
