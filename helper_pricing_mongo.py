@@ -225,7 +225,10 @@ def get_shipping_costs() -> pd.DataFrame:
         return cached_data["shipping"]
     collection = db["shipping_prices"]
     shipping = pd.DataFrame(list(collection.find()))
-    shipping = shipping.drop(["_id"], axis=1)
+    shipping["effective_date"] = pd.to_datetime(shipping["effective_date"])
+    shipping = shipping.sort_values("effective_date", ascending=False)
+    shipping = shipping.drop_duplicates(["service", "destination"])
+    shipping = shipping.drop(["_id", "effective_date"], axis=1)
     shipping = shipping[shipping["destination"] == "National"]
     shipping[["minimum_cost", "minimum_kg", "kg_after"]] = shipping[["minimum_cost", "minimum_kg", "kg_after"]].astype('float32')
     cached_data["shipping"] = shipping
